@@ -15,7 +15,7 @@ documentation = "https://docs.rs/imgui_presentable"
 #imgui_presentable_derive = { path = "../derive" }
 imgui_presentable_derive = { version = "0.1" }
 imgui = { version = "0.11", features = ["tables-api", "docking"] }
-glam = { version = "*", optional = true }
+glam = { version = "0.24", optional = true }
 
 [features]
 default = ["glam"]
