@@ -7,6 +7,7 @@ env:
 
 jobs:
   test:
+    permissions: write-all
     name: Test
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
 
@@ -65,6 +66,7 @@ jobs:
         run: cargo build --no-default-features
 
   clippy:
+    permissions: write-all
     name: Run clippy
     runs-on: ubuntu-latest
 
@@ -92,6 +94,7 @@ jobs:
       - run: cargo clippy
 
   MSRV:
+    permissions: write-all
     runs-on: ubuntu-latest
 
     steps:
@@ -118,6 +121,7 @@ jobs:
       - run: cargo check --all-features
 
   doc:
+    permissions: write-all
     name: Build docs
     runs-on: ubuntu-latest
 
