@@ -1,5 +1,10 @@
 # ImGui Presentable
 
+[![CI](https://github.com/vityafx/imgui_presentable/actions/workflows/ci.yml/badge.svg)](https://github.com/vityafx/imgui_presentable/actions/workflows/ci.yml)
+[![Crates](https://img.shields.io/crates/v/imgui_presentable.svg)](https://crates.io/crates/imgui_presentable)
+[![Docs](https://docs.rs/imgui_presentable/badge.svg)](https://docs.rs/imgui_presentable)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 A derive-macro for easily showing your structs as an ImGui component.
 
 ## Example
