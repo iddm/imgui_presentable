@@ -83,3 +83,7 @@ pub trait ImguiPresentable {
 This leads to this:
 
 ![Image](screenshot.png "The Scene struct is shown in ImGui")
+
+## License
+
+MIT
