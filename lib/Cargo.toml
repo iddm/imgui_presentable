@@ -1,0 +1,14 @@
+[package]
+name = "imgui_presentable"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+imgui_presentable_derive = { path = "../derive" }
+imgui = { version = "0.11", features = ["tables-api", "docking"] }
+glam = { version = "*", optional = true }
+
+[features]
+default = ["glam"]
