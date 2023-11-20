@@ -2,6 +2,12 @@
 name = "imgui_presentable_derive"
 version = "0.1.0"
 edition = "2021"
+authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
+description = "Derive macro for ImguiPresentable."
+license = "MIT"
+keywords = ["imgui"]
+repository = "https://github.com/vityafx/imgui_presentable"
+documentation = "https://docs.rs/imgui_presentable_derive"
 
 [lib]
 proc-macro = true
