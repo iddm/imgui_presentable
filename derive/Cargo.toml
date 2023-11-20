@@ -1,6 +1,6 @@
 [package]
 name = "imgui_presentable_derive"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "Derive macro for ImguiPresentable."
