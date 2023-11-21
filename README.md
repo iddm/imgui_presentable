@@ -5,9 +5,10 @@
 [![Docs](https://docs.rs/imgui_presentable/badge.svg)](https://docs.rs/imgui_presentable)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-A derive-macro for easily showing your structs as an ImGui component.
+A derive-macro for easily showing your structs as an GUI component using 
+[egui](https://github.com/emilk/egui) or [imgui-rs](https://github.com/imgui-rs/imgui-rs).
 
-## Example
+## Example (using ImGui)
 
 ```rust
 /// Describes a game scene.
@@ -88,6 +89,15 @@ pub trait ImguiPresentable {
 This leads to this:
 
 ![Image](screenshot.png "The Scene struct is shown in ImGui")
+
+## Backends
+
+The supported backends:
+
+- egui
+- ImGui
+
+The backend is selectable via the crate features.
 
 ## License
 

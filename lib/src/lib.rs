@@ -1,7 +1,10 @@
 //! Imgui Presentable interface.
 //!
-//! This is the main interfaces used by the crate to allow the users
-//! to render enums or structs in ImGui effortlessly.
+//! This is the main interface used by the crate to allow the users
+//! to render enums or structs in ImGui or egui effortlessly.
+//!
+//! To switch between the gui backends (ImGui and egui), use the
+//! corresponding crate features.
 //!
 //! The crate already provides some implementations for the basic Rust
 //! types and some other types from other crates, feature-gated.

@@ -207,7 +207,7 @@ dependencies = [
 
 [[package]]
 name = "imgui_presentable"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "egui",
  "egui_extras",

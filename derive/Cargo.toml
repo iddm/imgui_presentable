@@ -1,6 +1,6 @@
 [package]
 name = "imgui_presentable_derive"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "Derive macro for ImguiPresentable."
@@ -22,6 +22,6 @@ lazy_static = "1"
 regex = "1"
 
 [features]
-default = []
+default = ["imgui_backend"]
 egui_backend = []
 imgui_backend = []

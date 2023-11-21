@@ -1,6 +1,6 @@
 [package]
 name = "imgui_presentable"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "A simple way to represent Rust types in ImGui."
@@ -12,8 +12,8 @@ documentation = "https://docs.rs/imgui_presentable"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-imgui_presentable_derive = { path = "../derive" }
-#imgui_presentable_derive = { version = "0.1" }
+# imgui_presentable_derive = { path = "../derive" }
+imgui_presentable_derive = { version = "0.2" }
 imgui = { version = "0.11", features = ["tables-api", "docking"], optional = true }
 egui = { version = "0.23", optional = true }
 # Just for the tables.
