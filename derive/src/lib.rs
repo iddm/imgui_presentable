@@ -7,6 +7,14 @@ mod attributes;
 mod enum_impl;
 mod struct_impl;
 
+#[cfg(all(feature = "imgui_backend", feature = "egui_backend"))]
+compile_error!("Only one backend has to be chosen as a feature: either egui or imgui.");
+
+#[cfg(not(any(feature = "imgui_backend", feature = "egui_backend")))]
+compile_error!(
+    "At least one backend has to be specified in the feature list: either egui or imgui."
+);
+
 fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let derive_input = {
         let tokens = tokens.clone();

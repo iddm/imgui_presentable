@@ -26,6 +26,7 @@ pub struct Extent {
 }
 
 /// Allows the implementing object to be rendered as an ImGUI component.
+#[cfg(feature = "imgui_backend")]
 pub trait ImguiPresentable {
     /// Renders the implementor as a stand-alone window not allowing to
     /// change the values.
@@ -63,5 +64,38 @@ pub trait ImguiPresentable {
     fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
         // ui.text("This struct doesn't provide a mutable ui.");
         self.render_component(ui, extent);
+    }
+}
+
+/// Allows the implementing object to be rendered as an ImGUI component.
+#[cfg(feature = "egui_backend")]
+pub trait ImguiPresentable {
+    /// Renders the implementor as a stand-alone window not allowing to
+    /// change the values.
+    fn render_window(&self, context: &egui::Context) {
+        egui::Window::new(std::any::type_name::<Self>())
+            .show(context, |ui| self.render_component(ui));
+    }
+
+    /// Renders the implementor as a sub-component not allowing to
+    /// change the values.
+    fn render_component(&self, ui: &mut egui::Ui);
+
+    /// Renders the implementor as a stand-alone window allowing to
+    /// change the values.
+    fn render_window_mut(&mut self, context: &egui::Context) {
+        egui::Window::new(std::any::type_name::<Self>())
+            .show(context, |ui| self.render_component_mut(ui));
+    }
+
+    /// Renders the implementor as a sub-component allowing to change
+    /// the values.
+    ///
+    /// # Note
+    ///
+    /// If not re-implemented, the default implementation shows the
+    /// immutable UI.
+    fn render_component_mut(&mut self, ui: &mut egui::Ui) {
+        self.render_component(ui);
     }
 }

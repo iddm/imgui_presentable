@@ -38,6 +38,7 @@ fn generate_ui_field_for_struct(
     let readonly_override = attributes.has_readonly();
     let mutable = mutable && !readonly_override;
 
+    #[cfg(feature = "imgui_backend")]
     let create_subtree = |content| {
         quote! {
             let field_name = stringify!(#field_name).replace('"', "");
@@ -51,31 +52,67 @@ fn generate_ui_field_for_struct(
         }
     };
 
+    #[cfg(feature = "egui_backend")]
+    let create_subtree = |content| {
+        quote! {
+            let field_name = stringify!(#field_name).replace('"', "");
+            // #ui.separator();
+            #ui.collapsing(field_name, |ui| {
+                #content
+            });
+        }
+    };
+
     let ui_element_generate = || {
-        let generated = if mutable {
-            quote! {
-                let _id = #ui.push_id(&format!("{}##{:p}", stringify!(#field_name), std::ptr::addr_of!(self.#field_ident)));
+        #[cfg(feature = "imgui_backend")]
+        let mut code = quote! {
+            let _id = #ui.push_id(&format!("{}##{:p}", stringify!(#field_name), std::ptr::addr_of!(self.#field_ident)));
+        };
+        #[cfg(feature = "egui_backend")]
+        let mut code = quote! {};
+
+        #[cfg(feature = "imgui_backend")]
+        if mutable {
+            code.extend(quote! {
                 self.#field_ident.render_component_mut(#ui, #extent);
-            }
+            });
         } else {
-            quote! {
-                let _id = #ui.push_id(&format!("{}##{:p}", stringify!(#field_name), std::ptr::addr_of!(self.#field_ident)));
+            code.extend(quote! {
                 self.#field_ident.render_component(#ui, #extent);
-            }
+            });
+        };
+
+        #[cfg(feature = "egui_backend")]
+        if mutable {
+            code.extend(quote! {
+                self.#field_ident.render_component_mut(#ui);
+            });
+        } else {
+            code.extend(quote! {
+                self.#field_ident.render_component(#ui);
+            });
         };
 
         if let Some(text) = attributes.get_tooltip_or_documentation() {
-            quote! {
+            #[cfg(feature = "imgui_backend")]
+            let mut tooltip = quote! {
                 {
                     let style = #ui.push_style_color(imgui::StyleColor::Text, [0.5, 0.5, 0.5, 1.0]);
                     #ui.text(#text);
                 }
+            };
+            #[cfg(feature = "egui_backend")]
+            let mut tooltip = quote! {
+                {
+                    #ui.label(#text);
+                }
+            };
 
-                #generated
-            }
-        } else {
-            generated
+            tooltip.extend(code);
+            code = tooltip;
         }
+
+        code
     };
 
     let ui_element = create_subtree(ui_element_generate());
@@ -84,11 +121,17 @@ fn generate_ui_field_for_struct(
         #ui_element
     };
 
+    #[allow(unused_variables)]
     if let Some(tooltip_text) = attributes.get_tooltip_or_documentation() {
+        #[cfg(feature = "imgui_backend")]
         generated.extend(quote! {
             if #ui.is_item_hovered() {
                 #ui.tooltip_text(#tooltip_text);
             }
+        });
+        #[cfg(feature = "egui_backend")]
+        generated.extend(quote! {
+            // TODO
         });
     }
 
@@ -200,10 +243,17 @@ pub(crate) fn derive_for_struct(
     };
 
     let tooltip = if let Some(text) = struct_attributes.get_tooltip_or_documentation() {
+        #[cfg(feature = "imgui_backend")]
         quote! {
             {
                 let style = #ui_ident.push_style_color(imgui::StyleColor::Text, [0.5, 0.5, 0.5, 1.0]);
                 #ui_ident.text(#text);
+            }
+        }
+        #[cfg(feature = "egui_backend")]
+        quote! {
+            {
+                #ui_ident.label(#text);
             }
         }
     } else {
@@ -217,9 +267,20 @@ pub(crate) fn derive_for_struct(
             let title = &b.title;
             let method_name = syn::Ident::new(&b.method_name, Span::call_site());
 
+            #[cfg(feature = "imgui_backend")]
             quote! {
                 {
                     if #ui_ident.button(#title) {
+                        #[allow(clippy::ignored_unit_patterns)]
+                        let _ = self.#method_name();
+                    }
+                }
+            }
+
+            #[cfg(feature = "egui_backend")]
+            quote! {
+                {
+                    if #ui_ident.button(#title).clicked() {
                         #[allow(clippy::ignored_unit_patterns)]
                         let _ = self.#method_name();
                     }
@@ -231,6 +292,7 @@ pub(crate) fn derive_for_struct(
             code
         });
 
+    #[cfg(feature = "imgui_backend")]
     let immutable_render = quote! {
         fn render_component(&self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
             #tooltip
@@ -239,8 +301,29 @@ pub(crate) fn derive_for_struct(
         }
     };
 
+    #[cfg(feature = "egui_backend")]
+    let immutable_render = quote! {
+        fn render_component(&self, #ui_ident: &mut egui::Ui) {
+            #tooltip
+
+            #(#ui_elements;)*
+        }
+    };
+
+    #[cfg(feature = "imgui_backend")]
     let mutable_render = quote! {
         fn render_component_mut(&mut self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
+            #tooltip
+
+            #(#ui_elements_mut;)*
+
+            #buttons
+        }
+    };
+
+    #[cfg(feature = "egui_backend")]
+    let mutable_render = quote! {
+        fn render_component_mut(&mut self, #ui_ident: &mut egui::Ui) {
             #tooltip
 
             #(#ui_elements_mut;)*

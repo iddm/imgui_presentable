@@ -20,3 +20,8 @@ quote = "1"
 syn = { version = "2", features = ["full", "extra-traits"] }
 lazy_static = "1"
 regex = "1"
+
+[features]
+default = []
+egui_backend = []
+imgui_backend = []
