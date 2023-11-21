@@ -1,6 +1,6 @@
 [package]
 name = "imgui_presentable"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "A simple way to represent Rust types in ImGui."
@@ -24,3 +24,7 @@ glam = { version = "0.24", optional = true }
 default = ["glam", "imgui_backend"]
 imgui_backend = ["imgui_presentable_derive/imgui_backend", "imgui"]
 egui_backend = ["imgui_presentable_derive/egui_backend", "egui", "egui_extras"]
+
+[package.metadata.docs.rs]
+# To doc all features
+all-features = true
