@@ -5,7 +5,7 @@
 [![Docs](https://docs.rs/imgui_presentable/badge.svg)](https://docs.rs/imgui_presentable)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-A derive-macro for easily showing your structs as an GUI component using 
+A derive-macro for easily showing your structs as a GUI component using 
 [egui](https://github.com/emilk/egui) or [imgui-rs](https://github.com/imgui-rs/imgui-rs).
 
 ## Example (using ImGui)
