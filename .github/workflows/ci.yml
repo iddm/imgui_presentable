@@ -91,7 +91,7 @@ jobs:
             target
           key: ${{ runner.os }}-clippy-${{ steps.tc.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.toml') }}
 
-      - run: cargo clippy
+      - run: cargo clippy --all-features --tests
 
   MSRV:
     permissions: write-all

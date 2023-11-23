@@ -237,6 +237,7 @@ pub(crate) fn derive_for_struct(
         })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_for_backend(
     ui_ident: &Ident,
     extent_ident: &Ident,
@@ -563,7 +564,6 @@ mod tests {
         number_of_fields: usize,
     ) {
         let code = get_immutable_code_from_impl(item_impl).unwrap();
-        println!("code: {}", item_impl.to_token_stream().to_string());
 
         assert_eq!(code.len(), number_of_fields * 3);
         (0..number_of_fields).for_each(|i| {

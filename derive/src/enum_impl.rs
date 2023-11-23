@@ -119,7 +119,7 @@ fn derive_for_pod_enum(
     enumm: &syn::DataEnum,
     backend: Backend,
 ) -> proc_macro2::TokenStream {
-    let name = &derive_input.ident;
+    let enum_name = &derive_input.ident;
     let (impl_generics, ty_generics, where_clause) = derive_input.generics.split_for_impl();
 
     let variants: Vec<_> = enumm
@@ -143,16 +143,17 @@ fn derive_for_pod_enum(
     #[allow(unused_variables)]
     let extent_ident = syn::Ident::new("extent", Span::call_site());
 
-    let ui_elements = generate_ui_field_for_pod_enum(&ui_ident, &name, &variants, false, backend);
+    let ui_elements =
+        generate_ui_field_for_pod_enum(&ui_ident, enum_name, &variants, false, backend);
     let ui_elements_mut =
-        generate_ui_field_for_pod_enum(&ui_ident, &name, &variants, true, backend);
+        generate_ui_field_for_pod_enum(&ui_ident, enum_name, &variants, true, backend);
 
     match backend {
         Backend::Imgui => {
             quote! {
                 /// # Renders [`#name`] using
                 /// [`imgui_presentable::ImguiPresentable`] derive macro.
-                impl #impl_generics imgui_presentable::ImguiPresentable for #name #ty_generics #where_clause {
+                impl #impl_generics imgui_presentable::ImguiPresentable for #enum_name #ty_generics #where_clause {
                     fn render_component(&self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
                         #ui_elements;
                     }
@@ -167,7 +168,7 @@ fn derive_for_pod_enum(
             quote! {
                 /// # Renders [`#name`] using
                 /// [`imgui_presentable::EguiPresentable`] derive macro.
-                impl #impl_generics imgui_presentable::EguiPresentable for #name #ty_generics #where_clause {
+                impl #impl_generics imgui_presentable::EguiPresentable for #enum_name #ty_generics #where_clause {
                     fn render_component(&self, #ui_ident: &mut egui::Ui) {
                         #ui_elements;
                     }
@@ -191,7 +192,7 @@ pub(crate) fn derive_for_enum(
 
     if is_pod_enum {
         return backends
-            .into_iter()
+            .iter()
             .fold(quote! {}, |mut implementation, backend| {
                 implementation.extend(derive_for_pod_enum(&derive_input, &enumm, *backend));
                 implementation

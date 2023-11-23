@@ -305,6 +305,8 @@ impl Attributes {
         })
     }
 
+    // TODO Unused for now, will be used in the future.
+    #[allow(dead_code)]
     pub fn get_format(&self) -> Option<&str> {
         self.attributes.iter().find_map(|a| {
             if let Attribute::Format(s) = a {

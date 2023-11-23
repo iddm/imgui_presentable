@@ -49,8 +49,8 @@ fn derive_imgui_presentable_impl_for_backends(
     };
 
     match derive_input.data.clone() {
-        Data::Struct(strukt) => derive_for_struct(derive_input, strukt, &backends),
-        Data::Enum(enumm) => derive_for_enum(derive_input, enumm, &backends),
+        Data::Struct(strukt) => derive_for_struct(derive_input, strukt, backends),
+        Data::Enum(enumm) => derive_for_enum(derive_input, enumm, backends),
         _ => quote! { compile_error!("Only structs and enums are supported.") },
     }
 }

@@ -37,7 +37,7 @@ jobs:
         uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --workspace --tests
+          args: --workspace --tests --all-features
 
   rustfmt:
     permissions: write-all
