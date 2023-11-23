@@ -15,10 +15,10 @@
 //! or the [`EguiPresentable`] trait itself.
 
 pub use imgui_presentable_derive::*;
-pub mod basic_types;
+mod basic_types;
 #[cfg(feature = "glam")]
-pub mod glam_types;
-pub mod std_types;
+mod glam_types;
+mod std_types;
 
 /// The width and height of the viewport used by ImGUI.
 #[cfg(feature = "imgui_backend")]
