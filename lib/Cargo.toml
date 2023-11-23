@@ -1,6 +1,6 @@
 [package]
 name = "imgui_presentable"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "A simple way to represent Rust types in ImGui."
