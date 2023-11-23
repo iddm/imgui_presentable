@@ -213,20 +213,7 @@ dependencies = [
  "egui_extras",
  "glam",
  "imgui",
- "imgui_presentable_derive 0.2.0",
-]
-
-[[package]]
-name = "imgui_presentable_derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d34c508cf2d4ae989a3a40b3517d31a2f4dae7e4441c32f7a234e5fbc635992"
-dependencies = [
- "lazy_static",
- "proc-macro2",
- "quote",
- "regex",
- "syn",
+ "imgui_presentable_derive",
 ]
 
 [[package]]

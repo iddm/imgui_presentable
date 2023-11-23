@@ -2,12 +2,15 @@ use proc_macro2::Span;
 use quote::quote;
 use syn::Ident;
 
+use crate::Backend;
+
 #[allow(clippy::too_many_arguments)]
 fn generate_ui_field_for_pod_enum(
     ui: &Ident,
     enum_name: &Ident,
     field_idents_and_values: &[(Ident, syn::Expr)],
     mutable: bool,
+    backend: Backend,
 ) -> proc_macro2::TokenStream {
     let field_idents: Vec<Ident> = field_idents_and_values
         .iter()
@@ -45,78 +48,78 @@ fn generate_ui_field_for_pod_enum(
         ];
     };
 
-    #[cfg(feature = "imgui_backend")]
-    {
-        if mutable {
-            code.extend(quote! {
-                let used = #ui.combo_simple_string(
-                    &format!("{}##{:p}", stringify!(#enum_name), std::ptr::addr_of!(self)),
-                    &mut current_value,
-                    &values,
-                );
+    match backend {
+        Backend::Imgui => {
+            if mutable {
+                code.extend(quote! {
+                    let used = #ui.combo_simple_string(
+                        &format!("{}##{:p}", stringify!(#enum_name), std::ptr::addr_of!(self)),
+                        &mut current_value,
+                        &values,
+                    );
 
-                if used {
+                    if used {
+                        *self = match current_value {
+                            #(#order_to_idents,)*
+                            _ => unreachable!("All the fields were checked."),
+                        }
+                    }
+                });
+            } else {
+                code.extend(quote! {
+                    #ui.disabled(true, || {
+                        let _used = #ui.combo_simple_string(
+                            &format!("{}##{:p}", stringify!(#enum_name), std::ptr::addr_of!(self)),
+                            &mut current_value,
+                            &values,
+                        );
+                    });
+                });
+            }
+        }
+        Backend::Egui => {
+            let ui_element = if mutable {
+                quote! {
+                egui::containers::ComboBox::from_label("")
+                    .show_index(
+                        #ui,
+                        &mut current_value,
+                        values.len(),
+                        |i| values[i],
+                    );
+
                     *self = match current_value {
                         #(#order_to_idents,)*
                         _ => unreachable!("All the fields were checked."),
                     }
                 }
-            });
-        } else {
-            code.extend(quote! {
-                #ui.disabled(true, || {
-                    let _used = #ui.combo_simple_string(
-                        &format!("{}##{:p}", stringify!(#enum_name), std::ptr::addr_of!(self)),
-                        &mut current_value,
-                        &values,
-                    );
-                });
-            });
-        }
-    }
-
-    #[cfg(feature = "egui_backend")]
-    {
-        let ui_element = if mutable {
-            quote! {
-            egui::containers::ComboBox::from_label("")
-                .show_index(
-                    #ui,
-                    &mut current_value,
-                    values.len(),
-                    |i| values[i],
-                );
-
-                *self = match current_value {
-                    #(#order_to_idents,)*
-                    _ => unreachable!("All the fields were checked."),
+            } else {
+                quote! {
+                     #ui.add_enabled_ui(false, |ui| {
+                        egui::containers::ComboBox::from_label("")
+                            .show_index(
+                                #ui,
+                                &mut current_value,
+                                values.len(),
+                                |i| values[i],
+                            );
+                     });
                 }
-            }
-        } else {
-            quote! {
-                 #ui.add_enabled_ui(false, |ui| {
-                    egui::containers::ComboBox::from_label("")
-                        .show_index(
-                            #ui,
-                            &mut current_value,
-                            values.len(),
-                            |i| values[i],
-                        );
-                 });
-            }
-        };
+            };
 
-        code.extend(ui_element);
+            code.extend(ui_element);
+        }
     }
 
     code
 }
 
 fn derive_for_pod_enum(
-    derive_input: syn::DeriveInput,
-    enumm: syn::DataEnum,
+    derive_input: &syn::DeriveInput,
+    enumm: &syn::DataEnum,
+    backend: Backend,
 ) -> proc_macro2::TokenStream {
-    let name = derive_input.ident;
+    let name = &derive_input.ident;
     let (impl_generics, ty_generics, where_clause) = derive_input.generics.split_for_impl();
 
     let variants: Vec<_> = enumm
@@ -140,35 +143,39 @@ fn derive_for_pod_enum(
     #[allow(unused_variables)]
     let extent_ident = syn::Ident::new("extent", Span::call_site());
 
-    let ui_elements = generate_ui_field_for_pod_enum(&ui_ident, &name, &variants, false);
-    let ui_elements_mut = generate_ui_field_for_pod_enum(&ui_ident, &name, &variants, true);
+    let ui_elements = generate_ui_field_for_pod_enum(&ui_ident, &name, &variants, false, backend);
+    let ui_elements_mut =
+        generate_ui_field_for_pod_enum(&ui_ident, &name, &variants, true, backend);
 
-    #[cfg(feature = "imgui_backend")]
-    quote! {
-        /// # Renders [`#name`] using
-        /// [`imgui_presentable::ImguiPresentable`] derive macro.
-        impl #impl_generics imgui_presentable::ImguiPresentable for #name #ty_generics #where_clause {
-            fn render_component(&self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
-                #ui_elements;
-            }
+    match backend {
+        Backend::Imgui => {
+            quote! {
+                /// # Renders [`#name`] using
+                /// [`imgui_presentable::ImguiPresentable`] derive macro.
+                impl #impl_generics imgui_presentable::ImguiPresentable for #name #ty_generics #where_clause {
+                    fn render_component(&self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
+                        #ui_elements;
+                    }
 
-            fn render_component_mut(&mut self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
-                #ui_elements_mut;
+                    fn render_component_mut(&mut self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
+                        #ui_elements_mut;
+                    }
+                }
             }
         }
-    }
+        Backend::Egui => {
+            quote! {
+                /// # Renders [`#name`] using
+                /// [`imgui_presentable::EguiPresentable`] derive macro.
+                impl #impl_generics imgui_presentable::EguiPresentable for #name #ty_generics #where_clause {
+                    fn render_component(&self, #ui_ident: &mut egui::Ui) {
+                        #ui_elements;
+                    }
 
-    #[cfg(feature = "egui_backend")]
-    quote! {
-        /// # Renders [`#name`] using
-        /// [`imgui_presentable::ImguiPresentable`] derive macro.
-        impl #impl_generics imgui_presentable::ImguiPresentable for #name #ty_generics #where_clause {
-            fn render_component(&self, #ui_ident: &mut egui::Ui) {
-                #ui_elements;
-            }
-
-            fn render_component_mut(&mut self, #ui_ident: &mut egui::Ui) {
-                #ui_elements_mut;
+                    fn render_component_mut(&mut self, #ui_ident: &mut egui::Ui) {
+                        #ui_elements_mut;
+                    }
+                }
             }
         }
     }
@@ -178,11 +185,17 @@ fn derive_for_pod_enum(
 pub(crate) fn derive_for_enum(
     derive_input: syn::DeriveInput,
     enumm: syn::DataEnum,
+    backends: &[Backend],
 ) -> proc_macro2::TokenStream {
     let is_pod_enum = enumm.variants.iter().any(|v| v.fields.is_empty());
 
     if is_pod_enum {
-        return derive_for_pod_enum(derive_input, enumm);
+        return backends
+            .into_iter()
+            .fold(quote! {}, |mut implementation, backend| {
+                implementation.extend(derive_for_pod_enum(&derive_input, &enumm, *backend));
+                implementation
+            });
     }
 
     quote! { compile_error!("Only POD enums are supported as of this moment.") }

@@ -1,13 +1,14 @@
-//! This module implements the [`ImguiPresentable`] for the basic Rust
-//! types, which are not collections.
-
-// fn label_with_address<T>(label: &str, t: &T) -> String {
-//     format!("{label}##{:p}", std::ptr::addr_of!(t))
-// }
+//! This module implements the [`ImguiPresentable`] and/or the
+//! [`EguiPresentable`] traits for the basic Rust types, which are not
+//! collections.
 
 #[cfg(feature = "imgui_backend")]
 mod imgui_backend {
     use crate::{Extent, ImguiPresentable};
+
+    // fn label_with_address<T>(label: &str, t: &T) -> String {
+    //     format!("{label}##{:p}", std::ptr::addr_of!(t))
+    // }
 
     macro_rules! define_for_scalar {
         ($scalar_type: ty) => {
@@ -111,11 +112,11 @@ pub use imgui_backend::*;
 
 #[cfg(feature = "egui_backend")]
 mod egui_backend {
-    use crate::ImguiPresentable;
+    use crate::EguiPresentable;
 
     macro_rules! define_for_scalar {
         ($scalar_type: ty) => {
-            impl ImguiPresentable for $scalar_type {
+            impl EguiPresentable for $scalar_type {
                 fn render_component(&self, ui: &mut egui::Ui) {
                     let type_name = std::any::type_name::<$scalar_type>();
                     let mut data = *self;
@@ -173,7 +174,7 @@ mod egui_backend {
         response
     }
 
-    impl ImguiPresentable for bool {
+    impl EguiPresentable for bool {
         fn render_component(&self, ui: &mut egui::Ui) {
             let mut data = *self;
             ui.add_enabled_ui(false, |ui: &mut egui::Ui| {
@@ -186,7 +187,7 @@ mod egui_backend {
         }
     }
 
-    impl ImguiPresentable for String {
+    impl EguiPresentable for String {
         fn render_component(&self, ui: &mut egui::Ui) {
             ui.label(self);
         }
@@ -196,7 +197,7 @@ mod egui_backend {
         }
     }
 
-    impl ImguiPresentable for &str {
+    impl EguiPresentable for &str {
         fn render_component(&self, ui: &mut egui::Ui) {
             ui.label(*self);
         }

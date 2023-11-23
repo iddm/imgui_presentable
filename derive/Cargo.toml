@@ -22,7 +22,7 @@ lazy_static = "1"
 regex = "1"
 
 [features]
-default = ["imgui_backend"]
+default = []
 egui_backend = []
 imgui_backend = []
 

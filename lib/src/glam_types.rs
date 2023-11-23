@@ -1,5 +1,5 @@
-//! Provides the implementations of the [ImguiPresentable] trait for the
-//! [`glam`] crate types.
+//! Provides the implementations of the [`ImguiPresentable`] and/or the
+//! [`EguiPresentable`] trait(s) for the [`glam`] crate types.
 
 #[cfg(feature = "imgui_backend")]
 mod imgui_backend {
@@ -19,16 +19,16 @@ mod imgui_backend {
                 ],
             ) {
                 ui.table_next_column();
-                self.x.render_component_mut(ui, extent);
+                (&mut self.x as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 ui.table_next_column();
-                self.y.render_component_mut(ui, extent);
+                (&mut self.y as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 ui.table_next_column();
-                self.z.render_component_mut(ui, extent);
+                (&mut self.z as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 ui.table_next_column();
-                self.w.render_component_mut(ui, extent);
+                (&mut self.w as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 table.end();
             }
@@ -47,16 +47,16 @@ mod imgui_backend {
                 ],
             ) {
                 ui.table_next_column();
-                self.x.render_component(ui, extent);
+                (&self.x as &dyn ImguiPresentable).render_component(ui, extent);
 
                 ui.table_next_column();
-                self.y.render_component(ui, extent);
+                (&self.y as &dyn ImguiPresentable).render_component(ui, extent);
 
                 ui.table_next_column();
-                self.z.render_component(ui, extent);
+                (&self.z as &dyn ImguiPresentable).render_component(ui, extent);
 
                 ui.table_next_column();
-                self.w.render_component(ui, extent);
+                (&self.w as &dyn ImguiPresentable).render_component(ui, extent);
 
                 table.end();
             }
@@ -76,13 +76,13 @@ mod imgui_backend {
                 ],
             ) {
                 ui.table_next_column();
-                self.x.render_component_mut(ui, extent);
+                (&mut self.x as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 ui.table_next_column();
-                self.y.render_component_mut(ui, extent);
+                (&mut self.y as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 ui.table_next_column();
-                self.z.render_component_mut(ui, extent);
+                (&mut self.z as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 table.end();
             }
@@ -100,13 +100,13 @@ mod imgui_backend {
                 ],
             ) {
                 ui.table_next_column();
-                self.x.render_component(ui, extent);
+                (&self.x as &dyn ImguiPresentable).render_component(ui, extent);
 
                 ui.table_next_column();
-                self.y.render_component(ui, extent);
+                (&self.y as &dyn ImguiPresentable).render_component(ui, extent);
 
                 ui.table_next_column();
-                self.z.render_component(ui, extent);
+                (&self.z as &dyn ImguiPresentable).render_component(ui, extent);
 
                 table.end();
             }
@@ -125,10 +125,10 @@ mod imgui_backend {
                 ],
             ) {
                 ui.table_next_column();
-                self.x.render_component_mut(ui, extent);
+                (&mut self.x as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 ui.table_next_column();
-                self.y.render_component_mut(ui, extent);
+                (&mut self.y as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
 
                 table.end();
             }
@@ -145,10 +145,10 @@ mod imgui_backend {
                 ],
             ) {
                 ui.table_next_column();
-                self.x.render_component(ui, extent);
+                (&self.x as &dyn ImguiPresentable).render_component(ui, extent);
 
                 ui.table_next_column();
-                self.y.render_component(ui, extent);
+                (&self.y as &dyn ImguiPresentable).render_component(ui, extent);
 
                 table.end();
             }
@@ -611,10 +611,10 @@ pub use imgui_backend::*;
 
 #[cfg(feature = "egui_backend")]
 mod egui_backend {
-    use crate::ImguiPresentable;
+    use crate::EguiPresentable;
     use egui_extras::{Column, TableBuilder};
 
-    impl ImguiPresentable for glam::Vec4 {
+    impl EguiPresentable for glam::Vec4 {
         fn render_component_mut(&mut self, ui: &mut egui::Ui) {
             let table = TableBuilder::new(ui)
                 .striped(true)
@@ -638,10 +638,18 @@ mod egui_backend {
                 .body(|mut body| {
                     body.row(20.0f32, |mut row| {
                         // ui.separator();
-                        row.col(|ui| self.x.render_component_mut(ui));
-                        row.col(|ui| self.y.render_component_mut(ui));
-                        row.col(|ui| self.z.render_component_mut(ui));
-                        row.col(|ui| self.w.render_component_mut(ui));
+                        row.col(|ui| {
+                            (&mut self.x as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
+                        row.col(|ui| {
+                            (&mut self.y as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
+                        row.col(|ui| {
+                            (&mut self.z as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
+                        row.col(|ui| {
+                            (&mut self.w as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
                     });
                 });
         }
@@ -669,16 +677,16 @@ mod egui_backend {
                 .body(|mut body| {
                     body.row(20.0f32, |mut row| {
                         // ui.separator();
-                        row.col(|ui| self.x.render_component(ui));
-                        row.col(|ui| self.y.render_component(ui));
-                        row.col(|ui| self.z.render_component(ui));
-                        row.col(|ui| self.w.render_component(ui));
+                        row.col(|ui| (&self.x as &dyn EguiPresentable).render_component(ui));
+                        row.col(|ui| (&self.y as &dyn EguiPresentable).render_component(ui));
+                        row.col(|ui| (&self.z as &dyn EguiPresentable).render_component(ui));
+                        row.col(|ui| (&self.w as &dyn EguiPresentable).render_component(ui));
                     });
                 });
         }
     }
 
-    impl ImguiPresentable for glam::Vec3 {
+    impl EguiPresentable for glam::Vec3 {
         fn render_component_mut(&mut self, ui: &mut egui::Ui) {
             let table = TableBuilder::new(ui)
                 .striped(true)
@@ -699,9 +707,15 @@ mod egui_backend {
                 .body(|mut body| {
                     body.row(20.0f32, |mut row| {
                         // ui.separator();
-                        row.col(|ui| self.x.render_component_mut(ui));
-                        row.col(|ui| self.y.render_component_mut(ui));
-                        row.col(|ui| self.z.render_component_mut(ui));
+                        row.col(|ui| {
+                            (&mut self.x as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
+                        row.col(|ui| {
+                            (&mut self.y as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
+                        row.col(|ui| {
+                            (&mut self.z as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
                     });
                 });
         }
@@ -726,15 +740,15 @@ mod egui_backend {
                 .body(|mut body| {
                     body.row(20.0f32, |mut row| {
                         // ui.separator();
-                        row.col(|ui| self.x.render_component(ui));
-                        row.col(|ui| self.y.render_component(ui));
-                        row.col(|ui| self.z.render_component(ui));
+                        row.col(|ui| (&self.x as &dyn EguiPresentable).render_component(ui));
+                        row.col(|ui| (&self.y as &dyn EguiPresentable).render_component(ui));
+                        row.col(|ui| (&self.z as &dyn EguiPresentable).render_component(ui));
                     });
                 });
         }
     }
 
-    impl ImguiPresentable for glam::Vec2 {
+    impl EguiPresentable for glam::Vec2 {
         fn render_component_mut(&mut self, ui: &mut egui::Ui) {
             let table = TableBuilder::new(ui)
                 .striped(true)
@@ -752,8 +766,12 @@ mod egui_backend {
                 .body(|mut body| {
                     body.row(20.0f32, |mut row| {
                         // ui.separator();
-                        row.col(|ui| self.x.render_component_mut(ui));
-                        row.col(|ui| self.y.render_component_mut(ui));
+                        row.col(|ui| {
+                            (&mut self.x as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
+                        row.col(|ui| {
+                            (&mut self.y as &mut dyn EguiPresentable).render_component_mut(ui)
+                        });
                     });
                 });
         }
@@ -775,8 +793,8 @@ mod egui_backend {
                 .body(|mut body| {
                     body.row(20.0f32, |mut row| {
                         // ui.separator();
-                        row.col(|ui| self.x.render_component(ui));
-                        row.col(|ui| self.y.render_component(ui));
+                        row.col(|ui| (&self.x as &dyn EguiPresentable).render_component(ui));
+                        row.col(|ui| (&self.y as &dyn EguiPresentable).render_component(ui));
                     });
                 });
         }
@@ -833,7 +851,7 @@ mod egui_backend {
         let _ = ui.add(egui::DragValue::new(&mut vec.y).prefix(format!("{prefix}_1")));
     }
 
-    impl ImguiPresentable for glam::Mat4 {
+    impl EguiPresentable for glam::Mat4 {
         fn render_component(&self, ui: &mut egui::Ui) {
             // if let Some(table) = ui.begin_table_header(
             //     "values",
@@ -962,7 +980,7 @@ mod egui_backend {
         }
     }
 
-    impl ImguiPresentable for glam::Mat3 {
+    impl EguiPresentable for glam::Mat3 {
         fn render_component(&self, ui: &mut egui::Ui) {
             let table = TableBuilder::new(ui)
                 .striped(true)
@@ -1060,7 +1078,7 @@ mod egui_backend {
         }
     }
 
-    impl ImguiPresentable for glam::Mat2 {
+    impl EguiPresentable for glam::Mat2 {
         fn render_component(&self, ui: &mut egui::Ui) {
             let table = TableBuilder::new(ui)
                 .striped(true)

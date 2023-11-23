@@ -1,17 +1,18 @@
-//! Imgui Presentable interface.
+//! Imgui Presentable.
 //!
-//! This is the main interface used by the crate to allow the users
-//! to render enums or structs in ImGui or egui effortlessly.
+//! Here are the main interfaces which allow the users to render enums
+//! or structs in ImGui or egui effortlessly.
 //!
 //! To switch between the gui backends (ImGui and egui), use the
-//! corresponding crate features.
+//! corresponding crate features. Both the features can be enabled
+//! simultaneously, if necessary.
 //!
 //! The crate already provides some implementations for the basic Rust
 //! types and some other types from other crates, feature-gated.
 //!
 //! For the collections, the trait is implemented automatically if the
 //! element type of the collection implements the [`ImguiPresentable`]
-//! trait itself.
+//! or the [`EguiPresentable`] trait itself.
 
 pub use imgui_presentable_derive::*;
 pub mod basic_types;
@@ -20,6 +21,7 @@ pub mod glam_types;
 pub mod std_types;
 
 /// The width and height of the viewport used by ImGUI.
+#[cfg(feature = "imgui_backend")]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Extent {
     /// The width of the viewport (in pixels).
@@ -27,7 +29,6 @@ pub struct Extent {
     /// The height of the viewport (in pixels).
     pub height: u16,
 }
-
 /// Allows the implementing object to be rendered as an ImGUI component.
 #[cfg(feature = "imgui_backend")]
 pub trait ImguiPresentable {
@@ -70,9 +71,9 @@ pub trait ImguiPresentable {
     }
 }
 
-/// Allows the implementing object to be rendered as an ImGUI component.
+/// Allows the implementing object to be rendered as an eGUI component.
 #[cfg(feature = "egui_backend")]
-pub trait ImguiPresentable {
+pub trait EguiPresentable {
     /// Renders the implementor as a stand-alone window not allowing to
     /// change the values.
     fn render_window(&self, context: &egui::Context) {

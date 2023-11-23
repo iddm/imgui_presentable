@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use enum_impl::derive_for_enum;
 use quote::quote;
 use struct_impl::derive_for_struct;
@@ -7,12 +9,29 @@ mod attributes;
 mod enum_impl;
 mod struct_impl;
 
-#[cfg(all(feature = "imgui_backend", feature = "egui_backend"))]
-compile_error!("Only one backend has to be chosen as a feature: either egui or imgui.");
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub(crate) enum Backend {
+    #[allow(dead_code)]
+    Imgui,
+    #[allow(dead_code)]
+    Egui,
+}
+
+impl FromStr for Backend {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_ref() {
+            "imgui" => Self::Imgui,
+            "egui" => Self::Egui,
+            _ => return Err(format!("{s} is an unknown backend.")),
+        })
+    }
+}
 
 #[cfg(not(any(feature = "imgui_backend", feature = "egui_backend")))]
 compile_error!(
-    "At least one backend has to be specified in the feature list: either egui or imgui."
+    "At least one backend has to be specified in the feature list: either egui or imgui. The derive macro is useless otherwise."
 );
 
 fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
@@ -26,14 +45,22 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
         }
     };
 
+    let backends = [
+        #[cfg(feature = "imgui_backend")]
+        Backend::Imgui,
+        #[cfg(feature = "egui_backend")]
+        Backend::Egui,
+    ];
+
     match derive_input.data.clone() {
-        Data::Struct(strukt) => derive_for_struct(derive_input, strukt),
-        Data::Enum(e) => derive_for_enum(derive_input, e),
+        Data::Struct(strukt) => derive_for_struct(derive_input, strukt, &backends),
+        Data::Enum(enumm) => derive_for_enum(derive_input, enumm, &backends),
         _ => quote! { compile_error!("Only structs and enums are supported.") },
     }
 }
 
-/// Generates the ImGui representation for a struct or an enum.
+/// Generates the immediate gui (ImGui or egui) representation for a
+/// struct or an enum.
 ///
 /// # Options
 ///
@@ -50,6 +77,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// - `tooltip` changes the hint text for a field or a struct.
 /// - `button` allows to generated custom buttons, can only be
 /// specified on a struct/enum.
+/// - `backend` allows a struct or enum to specify the backend it needs.
+/// only the chosen backend code will be derived.
 ///
 /// # Examples
 ///
@@ -173,6 +202,30 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 ///     }
 /// }
 /// ```
+///
+/// ## Backends
+///
+/// To specify a backend for the code generation for a struct, use the
+/// `backend` attribute:
+///
+/// ```rust
+/// #[derive(Builder, Debug, Clone, serde::Serialize, serde::Deserialize, ImguiPresentation)]
+/// #[imgui_presentation(backend = "imgui")]
+/// pub struct A {
+/// }
+/// ```
+///
+/// Usually, the backend specification isn't required, as only
+/// one of the backends is built due to only one being selected as a
+/// crate feature. However, by default, both are generated as both
+/// features are the default ones, and if the default features aren't
+/// disabled for the crate, the compiler will always try to generate the
+/// code for both the backends even if only one is actually being used.
+/// For that reason, to direct the derive macro to generate the code
+/// for a struct or an enum for only one backend out of others which are
+/// also available, the `backend` attribute should be used. If it is
+/// known in advance that only one backend will be used, just disable
+/// the default features for this crate and specify the ones you need.
 ///
 /// ## Tuple structs
 ///

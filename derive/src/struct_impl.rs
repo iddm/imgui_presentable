@@ -2,7 +2,10 @@ use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::{Fields, Ident, TypePath};
 
-use crate::attributes::{self, Attributes};
+use crate::{
+    attributes::{self, Attributes},
+    Backend,
+};
 
 #[allow(clippy::too_many_arguments)]
 fn generate_ui_field_for_struct(
@@ -15,6 +18,7 @@ fn generate_ui_field_for_struct(
     _field_type: &TypePath,
     attributes: &Attributes,
     mutable: bool,
+    backend: Backend,
 ) -> proc_macro2::TokenStream {
     let (field_name, field_ident) = match field_ident {
         Some(s) => {
@@ -38,101 +42,107 @@ fn generate_ui_field_for_struct(
     let readonly_override = attributes.has_readonly();
     let mutable = mutable && !readonly_override;
 
-    #[cfg(feature = "imgui_backend")]
-    let create_subtree = |content| {
-        quote! {
-            let field_name = stringify!(#field_name).replace('"', "");
-            // #ui.separator();
-            #ui.tree_node_config(&format!("{field_name}##{self:p}"))
-                .opened(true, imgui::Condition::FirstUseEver)
-                .framed(true)
-                .build(|| {
-                    #content
+    let element_subtree = match backend {
+        Backend::Imgui => {
+            let ui_element = {
+                let mut code = quote! {
+                    let _id = #ui.push_id(&format!("{}##{:p}", stringify!(#field_name), std::ptr::addr_of!(self.#field_ident)));
+                };
+
+                if mutable {
+                    code.extend(quote! {
+                        (&mut self.#field_ident as &mut dyn imgui_presentable::ImguiPresentable).render_component_mut(#ui, #extent);
+                    });
+                } else {
+                    code.extend(quote! {
+                        (&self.#field_ident as &dyn imgui_presentable::ImguiPresentable).render_component(#ui, #extent);
+                    });
+                };
+
+                if let Some(text) = attributes.get_tooltip_or_documentation() {
+                    let mut tooltip = quote! {
+                        {
+                            let style = #ui.push_style_color(imgui::StyleColor::Text, [0.5, 0.5, 0.5, 1.0]);
+                            #ui.text(#text);
+                        }
+                    };
+
+                    tooltip.extend(code);
+                    code = tooltip;
+                }
+
+                code
+            };
+
+            quote! {
+                let field_name = stringify!(#field_name).replace('"', "");
+                // #ui.separator();
+                #ui.tree_node_config(&format!("{field_name}##{self:p}"))
+                    .opened(true, imgui::Condition::FirstUseEver)
+                    .framed(true)
+                    .build(|| {
+                        #ui_element
+                    });
+            }
+        }
+        Backend::Egui => {
+            let ui_element = {
+                let mut code = quote! {};
+
+                if mutable {
+                    code.extend(quote! {
+                        (&mut self.#field_ident as &mut dyn imgui_presentable::EguiPresentable).render_component_mut(#ui);
+                    });
+                } else {
+                    code.extend(quote! {
+                        (&self.#field_ident as &dyn imgui_presentable::EguiPresentable).render_component(#ui);
+                    });
+                };
+
+                if let Some(text) = attributes.get_tooltip_or_documentation() {
+                    let mut tooltip = quote! {
+                        {
+                            #ui.label(#text);
+                        }
+                    };
+
+                    tooltip.extend(code);
+                    code = tooltip;
+                }
+
+                code
+            };
+
+            quote! {
+                let field_name = stringify!(#field_name).replace('"', "");
+                // #ui.separator();
+                #ui.collapsing(field_name, |ui| {
+                    #ui_element
                 });
+            }
         }
     };
-
-    #[cfg(feature = "egui_backend")]
-    let create_subtree = |content| {
-        quote! {
-            let field_name = stringify!(#field_name).replace('"', "");
-            // #ui.separator();
-            #ui.collapsing(field_name, |ui| {
-                #content
-            });
-        }
-    };
-
-    let ui_element_generate = || {
-        #[cfg(feature = "imgui_backend")]
-        let mut code = quote! {
-            let _id = #ui.push_id(&format!("{}##{:p}", stringify!(#field_name), std::ptr::addr_of!(self.#field_ident)));
-        };
-        #[cfg(feature = "egui_backend")]
-        let mut code = quote! {};
-
-        #[cfg(feature = "imgui_backend")]
-        if mutable {
-            code.extend(quote! {
-                self.#field_ident.render_component_mut(#ui, #extent);
-            });
-        } else {
-            code.extend(quote! {
-                self.#field_ident.render_component(#ui, #extent);
-            });
-        };
-
-        #[cfg(feature = "egui_backend")]
-        if mutable {
-            code.extend(quote! {
-                self.#field_ident.render_component_mut(#ui);
-            });
-        } else {
-            code.extend(quote! {
-                self.#field_ident.render_component(#ui);
-            });
-        };
-
-        if let Some(text) = attributes.get_tooltip_or_documentation() {
-            #[cfg(feature = "imgui_backend")]
-            let mut tooltip = quote! {
-                {
-                    let style = #ui.push_style_color(imgui::StyleColor::Text, [0.5, 0.5, 0.5, 1.0]);
-                    #ui.text(#text);
-                }
-            };
-            #[cfg(feature = "egui_backend")]
-            let mut tooltip = quote! {
-                {
-                    #ui.label(#text);
-                }
-            };
-
-            tooltip.extend(code);
-            code = tooltip;
-        }
-
-        code
-    };
-
-    let ui_element = create_subtree(ui_element_generate());
 
     let mut generated = quote! {
-        #ui_element
+        #element_subtree
     };
 
     #[allow(unused_variables)]
     if let Some(tooltip_text) = attributes.get_tooltip_or_documentation() {
-        #[cfg(feature = "imgui_backend")]
-        generated.extend(quote! {
-            if #ui.is_item_hovered() {
-                #ui.tooltip_text(#tooltip_text);
+        match backend {
+            Backend::Imgui => {
+                generated.extend(quote! {
+                    if #ui.is_item_hovered() {
+                        #ui.tooltip_text(#tooltip_text);
+                    }
+                });
             }
-        });
-        #[cfg(feature = "egui_backend")]
-        generated.extend(quote! {
-            // TODO
-        });
+            Backend::Egui => {
+                generated.extend(quote! {
+                    // TODO
+                });
+            }
+        }
     }
 
     generated
@@ -152,8 +162,9 @@ fn get_type(typ: &syn::Type) -> TypePath {
 pub(crate) fn derive_for_struct(
     derive_input: syn::DeriveInput,
     strukt: syn::DataStruct,
+    backends: &[Backend],
 ) -> proc_macro2::TokenStream {
-    let name = derive_input.ident;
+    let struct_name = derive_input.ident;
     let (impl_generics, ty_generics, where_clause) = derive_input.generics.split_for_impl();
     let struct_attributes = match Attributes::parse_many(&derive_input.attrs) {
         Ok(a) => a,
@@ -198,21 +209,62 @@ pub(crate) fn derive_for_struct(
     let ui_ident = syn::Ident::new("ui", Span::call_site());
     let extent_ident = syn::Ident::new("extent", Span::call_site());
 
+    let chosen_backend = struct_attributes.get_backends();
+
+    backends
+        .iter()
+        .filter(|b| {
+            if chosen_backend.is_empty() {
+                true
+            } else {
+                chosen_backend.contains(b)
+            }
+        })
+        .fold(quote! {}, |mut implementation, backend| {
+            implementation.extend(generate_for_backend(
+                &ui_ident,
+                &extent_ident,
+                &struct_name,
+                total_field_count,
+                *backend,
+                &fields,
+                &struct_attributes,
+                &impl_generics,
+                &ty_generics,
+                &where_clause,
+            ));
+            implementation
+        })
+}
+
+fn generate_for_backend(
+    ui_ident: &Ident,
+    extent_ident: &Ident,
+    struct_name: &Ident,
+    total_field_count: usize,
+    backend: Backend,
+    fields: &[(Option<proc_macro2::Ident>, TypePath, Attributes)],
+    struct_attributes: &Attributes,
+    impl_generics: &syn::ImplGenerics<'_>,
+    ty_generics: &syn::TypeGenerics<'_>,
+    where_clause: &Option<&syn::WhereClause>,
+) -> proc_macro2::TokenStream {
     let ui_elements: Vec<proc_macro2::TokenStream> = fields
         .iter()
         .filter(|f| !f.2.has_skip())
         .enumerate()
         .map(|(i, f)| {
             generate_ui_field_for_struct(
-                &ui_ident,
-                &extent_ident,
-                &name,
+                ui_ident,
+                extent_ident,
+                struct_name,
                 &f.0,
                 i,
                 total_field_count,
                 &f.1,
                 &f.2,
                 false,
+                backend,
             )
         })
         .collect();
@@ -227,15 +279,16 @@ pub(crate) fn derive_for_struct(
                 .enumerate()
                 .map(|(i, f)| {
                     generate_ui_field_for_struct(
-                        &ui_ident,
-                        &extent_ident,
-                        &name,
+                        ui_ident,
+                        extent_ident,
+                        struct_name,
                         &f.0,
                         i,
                         total_field_count,
                         &f.1,
                         &f.2,
                         true,
+                        backend,
                     )
                 })
                 .collect()
@@ -243,17 +296,21 @@ pub(crate) fn derive_for_struct(
     };
 
     let tooltip = if let Some(text) = struct_attributes.get_tooltip_or_documentation() {
-        #[cfg(feature = "imgui_backend")]
-        quote! {
-            {
-                let style = #ui_ident.push_style_color(imgui::StyleColor::Text, [0.5, 0.5, 0.5, 1.0]);
-                #ui_ident.text(#text);
+        match backend {
+            Backend::Imgui => {
+                quote! {
+                    {
+                        let style = #ui_ident.push_style_color(imgui::StyleColor::Text, [0.5, 0.5, 0.5, 1.0]);
+                        #ui_ident.text(#text);
+                    }
+                }
             }
-        }
-        #[cfg(feature = "egui_backend")]
-        quote! {
-            {
-                #ui_ident.label(#text);
+            Backend::Egui => {
+                quote! {
+                    {
+                        #ui_ident.label(#text);
+                    }
+                }
             }
         }
     } else {
@@ -267,22 +324,25 @@ pub(crate) fn derive_for_struct(
             let title = &b.title;
             let method_name = syn::Ident::new(&b.method_name, Span::call_site());
 
-            #[cfg(feature = "imgui_backend")]
-            quote! {
-                {
-                    if #ui_ident.button(#title) {
-                        #[allow(clippy::ignored_unit_patterns)]
-                        let _ = self.#method_name();
+            match backend {
+                Backend::Imgui => {
+                    quote! {
+                        {
+                            if #ui_ident.button(#title) {
+                                #[allow(clippy::ignored_unit_patterns)]
+                                let _ = self.#method_name();
+                            }
+                        }
                     }
                 }
-            }
-
-            #[cfg(feature = "egui_backend")]
-            quote! {
-                {
-                    if #ui_ident.button(#title).clicked() {
-                        #[allow(clippy::ignored_unit_patterns)]
-                        let _ = self.#method_name();
+                Backend::Egui => {
+                    quote! {
+                        {
+                            if #ui_ident.button(#title).clicked() {
+                                #[allow(clippy::ignored_unit_patterns)]
+                                let _ = self.#method_name();
+                            }
+                        }
                     }
                 }
             }
@@ -292,59 +352,78 @@ pub(crate) fn derive_for_struct(
             code
         });
 
-    #[cfg(feature = "imgui_backend")]
-    let immutable_render = quote! {
-        fn render_component(&self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
-            #tooltip
+    let immutable_render = match backend {
+        Backend::Imgui => {
+            quote! {
+                fn render_component(&self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
+                    #tooltip
 
-            #(#ui_elements;)*
+                    #(#ui_elements;)*
+                }
+            }
+        }
+        Backend::Egui => {
+            quote! {
+                fn render_component(&self, #ui_ident: &mut egui::Ui) {
+                    #tooltip
+
+                    #(#ui_elements;)*
+                }
+            }
         }
     };
 
-    #[cfg(feature = "egui_backend")]
-    let immutable_render = quote! {
-        fn render_component(&self, #ui_ident: &mut egui::Ui) {
-            #tooltip
+    let mutable_render = match backend {
+        Backend::Imgui => {
+            quote! {
+                fn render_component_mut(&mut self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
+                    #tooltip
 
-            #(#ui_elements;)*
+                    #(#ui_elements_mut;)*
+
+                    #buttons
+                }
+            }
+        }
+        Backend::Egui => {
+            quote! {
+                fn render_component_mut(&mut self, #ui_ident: &mut egui::Ui) {
+                    #tooltip
+
+                    #(#ui_elements_mut;)*
+
+                    #buttons
+                }
+            }
         }
     };
 
-    #[cfg(feature = "imgui_backend")]
-    let mutable_render = quote! {
-        fn render_component_mut(&mut self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
-            #tooltip
-
-            #(#ui_elements_mut;)*
-
-            #buttons
+    let trait_name = match backend {
+        Backend::Imgui => {
+            quote! {
+                imgui_presentable::ImguiPresentable
+            }
         }
-    };
-
-    #[cfg(feature = "egui_backend")]
-    let mutable_render = quote! {
-        fn render_component_mut(&mut self, #ui_ident: &mut egui::Ui) {
-            #tooltip
-
-            #(#ui_elements_mut;)*
-
-            #buttons
+        Backend::Egui => {
+            quote! {
+                imgui_presentable::EguiPresentable
+            }
         }
     };
 
     if struct_attributes.has_readonly() {
         quote! {
-            /// Renders [`#name`] using
-            /// [`imgui_presentable::ImguiPresentable`] derive macro.
-            impl #impl_generics imgui_presentable::ImguiPresentable for #name #ty_generics #where_clause {
+            /// Renders [`#name`] using the [`#trait_name`] trait which
+            /// was automatically generated using the derive macro.
+            impl #impl_generics #trait_name for #struct_name #ty_generics #where_clause {
                 #immutable_render
             }
         }
     } else {
         quote! {
-            /// Renders [`#name`] using
-            /// [`imgui_presentable::ImguiPresentable`] derive macro.
-            impl #impl_generics imgui_presentable::ImguiPresentable for #name #ty_generics #where_clause {
+            /// Renders [`#name`] using the [`#trait_name`] trait which
+            /// was automatically generated using the derive macro.
+            impl #impl_generics #trait_name for #struct_name #ty_generics #where_clause {
                 #immutable_render
 
                 #mutable_render

@@ -1,12 +1,19 @@
-# ImGui Presentable
+# Immediate Gui Presentable
 
 [![CI](https://github.com/vityafx/imgui_presentable/actions/workflows/ci.yml/badge.svg)](https://github.com/vityafx/imgui_presentable/actions/workflows/ci.yml)
 [![Crates](https://img.shields.io/crates/v/imgui_presentable.svg)](https://crates.io/crates/imgui_presentable)
 [![Docs](https://docs.rs/imgui_presentable/badge.svg)](https://docs.rs/imgui_presentable)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-A derive-macro for easily showing your structs as a GUI component using 
+A derive-macro for easily showing your structs as a GUI component using
 [egui](https://github.com/emilk/egui) or [imgui-rs](https://github.com/imgui-rs/imgui-rs).
+
+The name of this crate (imgui_presentable) may seem confusing and being
+only limited to ImGui. Here, one may think of the name in the broad
+sense instead - "Immediate Gui", so that it is not limited to ImGui and
+never should be. The goal of this crate is to implement all the backends
+possible, and preferrably hide all the implementation detail behind the
+derive-macro.
 
 ## Example (using ImGui)
 
@@ -21,10 +28,6 @@ pub struct Scene {
     magic_header: MagicHeader,
     #[imgui_presentation(skip)]
     id: uuid::Uuid,
-    // /// All actors of this scene.
-    // pub actors: Vec<Box<dyn Actor>>,
-    // /// All the meshes within this scene.
-    // pub meshes: BTreeMap<MeshId, Mesh>
     /// Scene path.
     #[imgui_presentation(skip)]
     path: std::path::PathBuf,
@@ -86,6 +89,33 @@ pub trait ImguiPresentable {
 }
 ```
 
+Now, whenever it is needed to render the struct using ImGui, in the
+render loop, when a context to ImGui is obtained and a new frame drawing
+has begun, simply:
+
+```rust
+// Before the loop we create the object we want to render:
+let mut scene = Scene::new();
+// And initialise imgui:
+let imgui = _; // obtain the imgui object
+// And store the extent of the window:
+let extent = imgui_presentable::Extent {
+    width: window.width,
+    height: window.height,
+};
+
+// Now, in the render loop:
+let context = imgui.get_context();
+let ui = context.new_frame();
+
+// Render the component in a separate window:
+scene.render_window_mut(ui, extent);
+
+// Then finish the ImGui frame:
+let draw_data = imgui.render();
+// And render it using what you can.
+```
+
 This leads to this:
 
 ![Image](screenshot.png "The Scene struct is shown in ImGui")
@@ -98,6 +128,11 @@ The supported backends:
 - ImGui
 
 The backend is selectable via the crate features.
+
+For each of the backends, a similar but separate trait exists. Though,
+the same trait could have just been changed, it is much more practical
+and agile to allow both features to co-exist and this cannot be done
+using a single trait, unfortunately.
 
 ## License
 

@@ -1,5 +1,6 @@
-//! This module provides impementations of the [ImguiPresentable] trait
-//! for the commonly used std library types of Rust.
+//! This module provides impementations of the [`ImguiPresentable`]
+//! and/or the [`EguiPresentable`] trait for the commonly used standard
+//! library types of Rust.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
@@ -27,7 +28,7 @@ mod imgui_backend {
                         .opened(false, imgui::Condition::FirstUseEver)
                         .framed(true)
                         .build(|| {
-                            o.render_component(ui, extent);
+                            (o as &dyn ImguiPresentable).render_component(ui, extent);
                         });
                 });
 
@@ -59,7 +60,7 @@ mod imgui_backend {
                         &mut is_not_deleted,
                     ) {
                         ui.indent();
-                        o.render_component_mut(ui, extent);
+                        (o as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
                         ui.unindent();
                     }
 
@@ -110,7 +111,7 @@ mod imgui_backend {
                 ui.table_next_column();
 
                 self.iter().for_each(|o| {
-                    o.render_component(ui, extent);
+                    (o as &dyn ImguiPresentable).render_component(ui, extent);
                 });
 
                 table.end();
@@ -158,7 +159,7 @@ mod imgui_backend {
                         &mut is_not_deleted,
                     ) {
                         ui.indent();
-                        o.render_component(ui, extent);
+                        (o as &dyn ImguiPresentable).render_component(ui, extent);
                         ui.unindent();
                     }
 
@@ -195,7 +196,7 @@ mod imgui_backend {
                 ui.table_next_column();
 
                 self.iter().for_each(|o| {
-                    o.render_component(ui, extent);
+                    (o as &dyn ImguiPresentable).render_component(ui, extent);
                 });
 
                 table.end();
@@ -224,7 +225,7 @@ mod imgui_backend {
                         &mut is_not_deleted,
                     ) {
                         ui.indent();
-                        o.render_component(ui, extent);
+                        (o as &dyn ImguiPresentable).render_component(ui, extent);
                         ui.unindent();
                     }
 
@@ -259,13 +260,13 @@ mod imgui_backend {
             ) {
                 self.iter().enumerate().for_each(|(i, (k, v))| {
                     ui.table_next_column();
-                    i.render_component(ui, extent);
+                    (&i as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    k.render_component(ui, extent);
+                    (k as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    v.render_component(ui, extent);
+                    (v as &dyn ImguiPresentable).render_component(ui, extent);
                 });
 
                 table.end();
@@ -285,13 +286,13 @@ mod imgui_backend {
             ) {
                 self.iter_mut().enumerate().for_each(|(i, (k, v))| {
                     ui.table_next_column();
-                    i.render_component(ui, extent);
+                    (&i as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    k.render_component(ui, extent);
+                    (k as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    v.render_component_mut(ui, extent);
+                    (v as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
                 });
 
                 table.end();
@@ -320,13 +321,13 @@ mod imgui_backend {
             ) {
                 self.iter().enumerate().for_each(|(i, (k, v))| {
                     ui.table_next_column();
-                    i.render_component(ui, extent);
+                    (&i as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    k.render_component(ui, extent);
+                    (k as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    v.render_component(ui, extent);
+                    (v as &dyn ImguiPresentable).render_component(ui, extent);
                 });
 
                 table.end();
@@ -346,13 +347,13 @@ mod imgui_backend {
             ) {
                 self.iter_mut().enumerate().for_each(|(i, (k, v))| {
                     ui.table_next_column();
-                    i.render_component(ui, extent);
+                    (&i as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    k.render_component(ui, extent);
+                    (k as &dyn ImguiPresentable).render_component(ui, extent);
 
                     ui.table_next_column();
-                    v.render_component_mut(ui, extent);
+                    (v as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
                 });
 
                 table.end();
@@ -380,10 +381,12 @@ mod imgui_backend {
                     ui.checkbox(format!("Has value ({type_name})##{self:p}"), &mut has_value);
                 if checked || has_value {
                     match self.as_ref() {
-                        Some(value) => value.render_component(ui, extent),
+                        Some(value) => {
+                            (value as &dyn ImguiPresentable).render_component(ui, extent)
+                        }
                         None => {
                             let temp = T::default();
-                            temp.render_component(ui, extent);
+                            (&temp as &dyn ImguiPresentable).render_component(ui, extent);
                         }
                     }
                 }
@@ -407,7 +410,7 @@ mod imgui_backend {
                 }
 
                 if let Some(value) = self.as_mut() {
-                    value.render_component_mut(ui, extent);
+                    (value as &mut dyn ImguiPresentable).render_component_mut(ui, extent);
                 }
             }
         }
@@ -419,10 +422,10 @@ pub use imgui_backend::*;
 #[cfg(feature = "egui_backend")]
 mod egui_backend {
     use super::*;
-    use crate::ImguiPresentable;
+    use crate::EguiPresentable;
     use egui_extras::{Column, TableBuilder};
 
-    impl<T: ImguiPresentable> ImguiPresentable for Vec<T> {
+    impl<T: EguiPresentable> EguiPresentable for Vec<T> {
         fn render_component(&self, ui: &mut egui::Ui) {
             let type_name = std::any::type_name::<T>();
             let table = TableBuilder::new(ui)
@@ -440,7 +443,7 @@ mod egui_backend {
                         // ui.separator();
                         row.col(|ui| {
                             ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
-                                self[row_index].render_component(ui);
+                                (&self[row_index] as &dyn EguiPresentable).render_component(ui);
                             });
                         });
                     });
@@ -505,7 +508,8 @@ mod egui_backend {
                         row.col(|ui| {
                             ui.horizontal(|ui| {
                                 ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
-                                    self[row_index].render_component_mut(ui);
+                                    (&mut self[row_index] as &mut dyn EguiPresentable)
+                                        .render_component_mut(ui);
                                 });
 
                                 if ui.button("X").clicked() {
@@ -527,7 +531,7 @@ mod egui_backend {
         }
     }
 
-    impl<T: ImguiPresentable + Ord> ImguiPresentable for BTreeSet<T> {
+    impl<T: EguiPresentable + Ord> EguiPresentable for BTreeSet<T> {
         fn render_component(&self, ui: &mut egui::Ui) {
             let type_name = std::any::type_name::<T>();
             let table = TableBuilder::new(ui)
@@ -548,7 +552,7 @@ mod egui_backend {
                         row.col(|ui| {
                             ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
                                 if let Some(o) = iter.next() {
-                                    o.render_component(ui);
+                                    (o as &dyn EguiPresentable).render_component(ui);
                                 }
                             });
                         });
@@ -579,7 +583,7 @@ mod egui_backend {
                             ui.horizontal(|ui| {
                                 ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
                                     if let Some(o) = iter.next() {
-                                        o.render_component(ui);
+                                        (o as &dyn EguiPresentable).render_component(ui);
 
                                         if ui.button("X").clicked() {
                                             to_delete = Some(o);
@@ -602,7 +606,7 @@ mod egui_backend {
         }
     }
 
-    impl<T: ImguiPresentable> ImguiPresentable for HashSet<T> {
+    impl<T: EguiPresentable> EguiPresentable for HashSet<T> {
         fn render_component(&self, ui: &mut egui::Ui) {
             // let type_name = std::any::type_name::<T>();
             // let _id = ui.push_id(&format!("##{self:p}"));
@@ -641,7 +645,7 @@ mod egui_backend {
                         row.col(|ui| {
                             ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
                                 if let Some(o) = iter.next() {
-                                    o.render_component(ui);
+                                    (o as &dyn EguiPresentable).render_component(ui);
                                 }
                             });
                         });
@@ -729,7 +733,7 @@ mod egui_backend {
         // }
     }
 
-    impl<K: ImguiPresentable, V: ImguiPresentable> ImguiPresentable for BTreeMap<K, V> {
+    impl<K: EguiPresentable, V: EguiPresentable> EguiPresentable for BTreeMap<K, V> {
         fn render_component(&self, ui: &mut egui::Ui) {
             // if let Some(table) = ui.begin_table_header(
             //     "objects",
@@ -774,9 +778,9 @@ mod egui_backend {
                     body.rows(20.0f32, len, |_, mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
-                            row.col(|ui| i.render_component(ui));
-                            row.col(|ui| k.render_component(ui));
-                            row.col(|ui| v.render_component(ui));
+                            row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (k as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (v as &dyn EguiPresentable).render_component(ui));
                         }
                     });
                 });
@@ -828,9 +832,9 @@ mod egui_backend {
                     body.rows(20.0f32, len, |_, mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
-                            row.col(|ui| i.render_component(ui));
-                            row.col(|ui| k.render_component(ui));
-                            row.col(|ui| v.render_component_mut(ui));
+                            row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (k as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (v as &mut dyn EguiPresentable).render_component_mut(ui));
                         }
                     });
                 });
@@ -842,7 +846,7 @@ mod egui_backend {
         }
     }
 
-    impl<K: ImguiPresentable, V: ImguiPresentable> ImguiPresentable for HashMap<K, V> {
+    impl<K: EguiPresentable, V: EguiPresentable> EguiPresentable for HashMap<K, V> {
         fn render_component(&self, ui: &mut egui::Ui) {
             // let _id = ui.push_id(&format!("##{self:p}"));
             // if let Some(table) = ui.begin_table_header(
@@ -888,9 +892,9 @@ mod egui_backend {
                     body.rows(20.0f32, len, |_, mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
-                            row.col(|ui| i.render_component(ui));
-                            row.col(|ui| k.render_component(ui));
-                            row.col(|ui| v.render_component(ui));
+                            row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (k as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (v as &dyn EguiPresentable).render_component(ui));
                         }
                     });
                 });
@@ -950,9 +954,9 @@ mod egui_backend {
                     body.rows(20.0f32, len, |_, mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
-                            row.col(|ui| i.render_component(ui));
-                            row.col(|ui| k.render_component(ui));
-                            row.col(|ui| v.render_component_mut(ui));
+                            row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (k as &dyn EguiPresentable).render_component(ui));
+                            row.col(|ui| (v as &mut dyn EguiPresentable).render_component_mut(ui));
                         }
                     });
                 });
@@ -964,7 +968,7 @@ mod egui_backend {
         }
     }
 
-    impl<T: ImguiPresentable + Default> ImguiPresentable for Option<T> {
+    impl<T: EguiPresentable + Default> EguiPresentable for Option<T> {
         fn render_component(&self, ui: &mut egui::Ui) {
             let type_name = std::any::type_name::<T>();
             let mut has_value = self.is_some();
@@ -976,10 +980,10 @@ mod egui_backend {
 
                 if checked || has_value {
                     match self.as_ref() {
-                        Some(value) => value.render_component(ui),
+                        Some(value) => (value as &dyn EguiPresentable).render_component(ui),
                         None => {
                             let temp = T::default();
-                            temp.render_component(ui);
+                            (&temp as &dyn EguiPresentable).render_component(ui);
                         }
                     }
                 }
@@ -1001,7 +1005,7 @@ mod egui_backend {
                 }
 
                 if let Some(value) = self.as_mut() {
-                    value.render_component_mut(ui);
+                    (value as &mut dyn EguiPresentable).render_component_mut(ui);
                 }
             }
         }

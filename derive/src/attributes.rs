@@ -2,6 +2,8 @@ use std::{collections::HashSet, str::FromStr};
 
 use quote::{quote, ToTokens};
 
+use crate::Backend;
+
 pub type Result<T = (), E = proc_macro2::TokenStream> = std::result::Result<T, E>;
 
 fn parse_button_declaration(input: &str) -> Button {
@@ -51,9 +53,8 @@ pub enum Attribute {
     /// only be called in the mutable presentation mode, when the object
     /// can be changed (perhaps, this will change in the future).
     Button(Button),
-    // /// Marks a field as a field which will be used to indicate a
-    // /// a change made in the struct, using ImGui.
-    // ChangeMarker(ChangeMarker),
+    /// Allows to select a backend.
+    Backend(Backend),
 }
 
 impl FromStr for Attribute {
@@ -77,6 +78,7 @@ impl FromStr for Attribute {
                 "rename" => Self::Rename(value),
                 "format" => Self::Format(value),
                 "tooltip" => Self::Tooltip(value),
+                "backend" => Self::Backend(Backend::from_str(&value)?),
                 a => return Err(a.to_owned()),
             })
         } else if input.contains('(') {
@@ -339,6 +341,19 @@ impl Attributes {
             .filter_map(|a| {
                 if let Attribute::Button(s) = a {
                     Some(s)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn get_backends(&self) -> Vec<&Backend> {
+        self.attributes
+            .iter()
+            .filter_map(|a| {
+                if let Attribute::Backend(b) = a {
+                    Some(b)
                 } else {
                     None
                 }
