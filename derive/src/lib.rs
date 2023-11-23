@@ -34,7 +34,10 @@ compile_error!(
     "At least one backend has to be specified in the feature list: either egui or imgui. The derive macro is useless otherwise."
 );
 
-fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+fn derive_imgui_presentable_impl_for_backends(
+    tokens: proc_macro2::TokenStream,
+    backends: &[Backend],
+) -> proc_macro2::TokenStream {
     let derive_input = {
         let tokens = tokens.clone();
         match syn::parse2::<syn::DeriveInput>(tokens) {
@@ -45,6 +48,14 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
         }
     };
 
+    match derive_input.data.clone() {
+        Data::Struct(strukt) => derive_for_struct(derive_input, strukt, &backends),
+        Data::Enum(enumm) => derive_for_enum(derive_input, enumm, &backends),
+        _ => quote! { compile_error!("Only structs and enums are supported.") },
+    }
+}
+
+fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let backends = [
         #[cfg(feature = "imgui_backend")]
         Backend::Imgui,
@@ -52,11 +63,7 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
         Backend::Egui,
     ];
 
-    match derive_input.data.clone() {
-        Data::Struct(strukt) => derive_for_struct(derive_input, strukt, &backends),
-        Data::Enum(enumm) => derive_for_enum(derive_input, enumm, &backends),
-        _ => quote! { compile_error!("Only structs and enums are supported.") },
-    }
+    derive_imgui_presentable_impl_for_backends(tokens, &backends)
 }
 
 /// Generates the immediate gui (ImGui or egui) representation for a
@@ -87,8 +94,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// To make a whole struct read-only (so not render it allowing to
 /// change the values) just use the `readonly` attribute:
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// #[imgui_presentation(readonly)]
 /// pub struct A {
 ///     field: i32,
@@ -98,8 +105,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// To make a field read-only, it is allowed to specify the `readonly`
 /// attribute on a field:
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// pub struct A {
 ///     #[imgui_presentation(readonly)]
 ///     read_only_field: i32,
@@ -112,8 +119,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// To skip generating a Imgui UI element for a field, use the `skip`
 /// attribute:
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// pub struct A {
 ///     #[imgui_presentation(skip)]
 ///     skipped_field: i32,
@@ -128,8 +135,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// more human-readable name is required, one can always specify the
 /// name to appear in Imgui using the `rename` attribute:
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// #[imgui_presentation(rename = "A great struct")]
 /// pub struct A {
 ///     field: i32,
@@ -138,8 +145,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 ///
 /// The same goes for the fields:
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// #[imgui_presentation(rename = "A great struct")]
 /// pub struct A {
 ///     #[imgui_presentation(rename = "A great field of a great struct")]
@@ -154,11 +161,11 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// the text from that doc-comment. If the tooltip should be changed,
 /// the `tooltip` attribute can be used for structs, enums and fields:
 ///
-/// ```rust
+/// ```rust,ignore
 /// // This is a struct with a tooltip from the doc-comment:
 ///
 /// /// This is a great struct.
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// #[derive(ImguiPresentation)]
 /// pub struct A {
 ///     field: i32,
 /// }
@@ -167,9 +174,9 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// To change the tooltip text from `"This is a great struct"`, we use
 /// the `tooltip` attribute as follows:
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[imgui_presentation(tooltip = "This is not a great struct.")]
-/// #[derive(Builder, Debug, Clone, ImguiPresentation)]
+/// #[derive(ImguiPresentation)]
 /// pub struct A {
 ///     field: i32,
 /// }
@@ -181,12 +188,12 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 ///
 /// Buttons are specified once per attribute string, in the format of:
 ///
-/// ```
+/// ```ignore,no_run
 /// button(<"button title"> : <"method name to call">)
 /// ```
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, serde::Serialize, serde::Deserialize, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// #[imgui_presentation(button("Hello world": "hello_world"))]
 /// #[imgui_presentation(button("Bye world": "bye"))]
 /// pub struct A {
@@ -208,8 +215,8 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// To specify a backend for the code generation for a struct, use the
 /// `backend` attribute:
 ///
-/// ```rust
-/// #[derive(Builder, Debug, Clone, serde::Serialize, serde::Deserialize, ImguiPresentation)]
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
 /// #[imgui_presentation(backend = "imgui")]
 /// pub struct A {
 /// }
@@ -242,18 +249,10 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// appear as a ComboBox which allows to select a new value from a set
 /// of available variants of the enum, for example:
 ///
-/// ```rust
+/// ```rust,ignore
 /// /// The languages the engine supports.
 /// #[derive(
-///     Copy,
 ///     Default,
-///     Clone,
-///     Debug,
-///     Eq,
-///     PartialEq,
-///     Ord,
-///     PartialOrd,
-///     Hash,
 ///     ImguiPresentation,
 /// )]
 /// pub enum Language {

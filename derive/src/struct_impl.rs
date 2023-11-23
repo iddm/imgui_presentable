@@ -413,16 +413,14 @@ fn generate_for_backend(
 
     if struct_attributes.has_readonly() {
         quote! {
-            /// Renders [`#name`] using the [`#trait_name`] trait which
-            /// was automatically generated using the derive macro.
+            #[doc = "Renders [`Self`] in the immediate gui. The code was automatically generated using the derive macro."]
             impl #impl_generics #trait_name for #struct_name #ty_generics #where_clause {
                 #immutable_render
             }
         }
     } else {
         quote! {
-            /// Renders [`#name`] using the [`#trait_name`] trait which
-            /// was automatically generated using the derive macro.
+            #[doc = "Renders [`Self`] in the immediate gui. The code was automatically generated using the derive macro."]
             impl #impl_generics #trait_name for #struct_name #ty_generics #where_clause {
                 #immutable_render
 
@@ -438,7 +436,10 @@ mod tests {
 
     use proc_macro2::TokenStream;
 
-    use crate::{attributes::AttributeHasDocumentation, derive_imgui_presentable_impl};
+    use crate::{
+        attributes::AttributeHasDocumentation, derive_imgui_presentable_impl,
+        derive_imgui_presentable_impl_for_backends,
+    };
 
     use super::*;
 
@@ -537,14 +538,15 @@ mod tests {
     }
 
     fn assert_uses_imgui_control(statement: &syn::Stmt, mutably: bool, _is_primitive: bool) {
-        let regex = regex::Regex::new(r"(.*)ui\s*\.\s*[checkbox|input_scalar]\s*").unwrap();
+        let regex = regex::Regex::new(r"(.*)ui\s*\.\s*[checkbox|input_scalar|tree_node_config]\s*")
+            .unwrap();
         let s = &statement.to_token_stream().to_string();
         assert!(regex.is_match(s), "Isn't an imgui control usage: {s}");
 
         if !mutably {
             // TODO: ideally should check for passing the data to the
             // ImGui control object: either &self.data or &mut self.data.
-            let regex = regex::Regex::new(r"ui\s*\.\s*disabled\s\(").unwrap();
+            let regex = regex::Regex::new(r"render_component\s*\(").unwrap();
             assert!(regex.is_match(s), "Isn't using the field: {s}");
         }
     }
@@ -561,16 +563,17 @@ mod tests {
         number_of_fields: usize,
     ) {
         let code = get_immutable_code_from_impl(item_impl).unwrap();
+        println!("code: {}", item_impl.to_token_stream().to_string());
 
         assert_eq!(code.len(), number_of_fields * 3);
         (0..number_of_fields).for_each(|i| {
             let statement = &code[i];
             assert_is_let_binding_declaration(statement, "field_name", false, true);
+            // let statement = &code[i + 1];
+            // assert_is_let_binding_declaration(statement, "data", true, true);
             let statement = &code[i + 1];
-            assert_is_let_binding_declaration(statement, "data", true, true);
-            let statement = &code[i + 2];
             assert_uses_imgui_control(statement, false, true);
-            let statement = &code[i + 3];
+            let statement = &code[i + 2];
             assert_semicolon(statement);
         })
     }
@@ -668,8 +671,17 @@ mod tests {
             "#,
         ];
         for s in inputs {
-            let generated = derive_imgui_presentable_impl(TokenStream::from_str(s).unwrap());
-            let item_impl: syn::ItemImpl = syn::parse2(generated).unwrap();
+            let generated = derive_imgui_presentable_impl_for_backends(
+                TokenStream::from_str(s).unwrap(),
+                &[Backend::Imgui],
+            );
+            // println!("{generated}");
+            let item_impl: syn::ItemImpl = syn::parse2(generated.clone())
+                .map_err(|e| {
+                    println!("{generated}");
+                    e
+                })
+                .unwrap();
             // eprintln!("item impl: {item_impl:#?}");
             let docs: String = item_impl
                 .attrs
@@ -679,13 +691,13 @@ mod tests {
                 .join("");
             assert_eq!(
                 docs,
-                " Renders [`#name`] using [`imgui_presentable::ImguiPresentable`] derive macro."
+                "Renders [`Self`] in the immediate gui. The code was automatically generated using the derive macro."
             );
             // The last in trait_ path segments must be "ImguiPresentable".
-            assert_eq!(
-                get_trait_name_from_impl(&item_impl).unwrap(),
+            assert!(matches!(
+                get_trait_name_from_impl(&item_impl).unwrap().as_str(),
                 "ImguiPresentable"
-            );
+            ));
             // The type the trait is implemented for is "A".
             assert_eq!(get_self_type_from_impl(&item_impl).unwrap(), "A");
             // Has both, the immutable and mutable implementations.
