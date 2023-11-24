@@ -40,6 +40,7 @@ pub trait ImguiPresentable {
             .collapsible(true)
             .bg_alpha(0.7f32)
             .position([0.0, 0.0], imgui::Condition::FirstUseEver)
+            .menu_bar(true)
             .build(|| self.render_component(ui, extent));
     }
 
@@ -55,6 +56,7 @@ pub trait ImguiPresentable {
             .collapsible(true)
             .bg_alpha(0.7f32)
             .position([0.0, 0.0], imgui::Condition::FirstUseEver)
+            .menu_bar(true)
             .build(|| self.render_component_mut(ui, extent));
     }
 

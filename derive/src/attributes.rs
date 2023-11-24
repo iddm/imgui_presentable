@@ -317,14 +317,25 @@ impl Attributes {
         })
     }
 
-    pub fn get_documentation(&self) -> Option<&str> {
-        self.attributes.iter().find_map(|a| {
-            if let Attribute::Documentation(s) = a {
-                Some(s.trim())
-            } else {
-                None
-            }
-        })
+    pub fn get_documentation(&self) -> Option<String> {
+        // There might be many, due to how Rust creates those.
+        let strings = self
+            .attributes
+            .iter()
+            .filter_map(|a| {
+                if let Attribute::Documentation(s) = a {
+                    Some(s.trim())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<&str>>();
+
+        if strings.is_empty() {
+            None
+        } else {
+            Some(strings.join(""))
+        }
     }
 
     pub fn get_tooltip(&self) -> Option<&str> {
@@ -363,7 +374,9 @@ impl Attributes {
             .collect()
     }
 
-    pub fn get_tooltip_or_documentation(&self) -> Option<&str> {
-        self.get_tooltip().or(self.get_documentation())
+    pub fn get_tooltip_or_documentation(&self) -> Option<String> {
+        self.get_tooltip()
+            .map(|s| s.to_owned())
+            .or(self.get_documentation())
     }
 }

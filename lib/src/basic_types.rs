@@ -17,18 +17,14 @@ mod imgui_backend {
                     let type_name = std::any::type_name::<$scalar_type>();
                     let mut data = *self;
                     ui.disabled(true, || {
-                        let _ = ui
-                            .input_scalar(&format!("{type_name}##{self:p}"), &mut data)
-                            .read_only(true)
-                            .build();
+                        let _ = imgui::Drag::new(&format!("{type_name}##{self:p}"))
+                            .build(&ui, &mut data);
                     });
                 }
 
                 fn render_component_mut(&mut self, ui: &imgui::Ui, _extent: Extent) {
                     let type_name = std::any::type_name::<$scalar_type>();
-                    let _ = ui
-                        .input_scalar(&format!("{type_name}##{self:p}"), self)
-                        .build();
+                    let _ = imgui::Drag::new(&format!("{type_name}##{self:p}")).build(&ui, self);
                 }
             }
         };

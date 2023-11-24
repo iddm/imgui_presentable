@@ -12,9 +12,9 @@ documentation = "https://docs.rs/imgui_presentable"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#imgui_presentable_derive = { path = "../derive" }
-imgui_presentable_derive = { version = "0.3" }
-imgui = { version = "0.11", features = ["tables-api", "docking"], optional = true }
+imgui_presentable_derive = { path = "../derive" }
+# imgui_presentable_derive = { version = "0.3" }
+imgui = { version = "0.11", features = ["tables-api"], optional = true }
 egui = { version = "0.24", optional = true }
 # Just for the tables.
 egui_extras = { version = "0.24", optional = true }

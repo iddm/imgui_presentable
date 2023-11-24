@@ -318,7 +318,8 @@ fn generate_for_backend(
         quote! {}
     };
 
-    let buttons = struct_attributes
+    let has_buttons = !struct_attributes.get_buttons().is_empty();
+    let mut buttons = struct_attributes
         .get_buttons()
         .into_iter()
         .map(|b| {
@@ -352,6 +353,17 @@ fn generate_for_backend(
             code.extend(button);
             code
         });
+
+    if has_buttons {
+        buttons = match backend {
+            Backend::Imgui => quote! {
+                if let Some(_token) = #ui_ident.begin_menu_bar() {
+                    #buttons
+                }
+            },
+            Backend::Egui => buttons,
+        };
+    }
 
     let immutable_render = match backend {
         Backend::Imgui => {
