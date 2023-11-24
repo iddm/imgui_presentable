@@ -15,16 +15,29 @@ mod imgui_backend {
             impl ImguiPresentable for $scalar_type {
                 fn render_component(&self, ui: &imgui::Ui, _extent: Extent) {
                     let type_name = std::any::type_name::<$scalar_type>();
+                    let type_id = std::any::TypeId::of::<$scalar_type>();
+                    let f32_type_id = std::any::TypeId::of::<f32>();
+                    let f64_type_id = std::any::TypeId::of::<f64>();
+                    let is_float = type_id == f32_type_id || type_id == f64_type_id;
+                    let speed = if is_float { 0.001f32 } else { 1.0f32 };
                     let mut data = *self;
                     ui.disabled(true, || {
                         let _ = imgui::Drag::new(&format!("{type_name}##{self:p}"))
+                            .speed(speed)
                             .build(&ui, &mut data);
                     });
                 }
 
                 fn render_component_mut(&mut self, ui: &imgui::Ui, _extent: Extent) {
                     let type_name = std::any::type_name::<$scalar_type>();
-                    let _ = imgui::Drag::new(&format!("{type_name}##{self:p}")).build(&ui, self);
+                    let type_id = std::any::TypeId::of::<$scalar_type>();
+                    let f32_type_id = std::any::TypeId::of::<f32>();
+                    let f64_type_id = std::any::TypeId::of::<f64>();
+                    let is_float = type_id == f32_type_id || type_id == f64_type_id;
+                    let speed = if is_float { 0.001f32 } else { 1.0f32 };
+                    let _ = imgui::Drag::new(&format!("{type_name}##{self:p}"))
+                        .speed(speed)
+                        .build(&ui, self);
                 }
             }
         };

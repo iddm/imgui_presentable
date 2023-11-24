@@ -7,6 +7,7 @@ use crate::Backend;
 pub type Result<T = (), E = proc_macro2::TokenStream> = std::result::Result<T, E>;
 
 fn parse_button_declaration(input: &str) -> Button {
+    // TODO just use the Punctuated.
     let regex = regex::Regex::new(r#"^\s*\"(.*)\"\s*:\s*\"(.*)\"\s*$"#).unwrap();
     let mut captures = regex.captures_iter(input);
     let captured: (_, [&str; 2]) = captures.next().expect("Parse the button.").extract();
@@ -29,7 +30,9 @@ fn parse_button_declaration(input: &str) -> Button {
 /// pushed.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Button {
+    /// The title of the button.
     pub title: String,
+    /// The method name to call on `self` once the button is clicked.
     pub method_name: String,
 }
 
