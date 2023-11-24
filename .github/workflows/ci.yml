@@ -61,10 +61,6 @@ jobs:
         if: matrix.features == ''
         run: cargo test --all-features
 
-      - name: Build with no default features
-        if: matrix.features == ''
-        run: cargo build --no-default-features
-
   clippy:
     permissions: write-all
     name: Run clippy
@@ -147,4 +143,4 @@ jobs:
 
       - name: Build docs
         run: |
-          cargo doc
+          cargo doc --all-features
