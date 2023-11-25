@@ -25,8 +25,31 @@ fn parse_button_declaration(input: &str) -> Button {
     }
 }
 
+fn parse_main_menu_item_declaration(input: &str) -> MainMenuItem {
+    // TODO just use the Punctuated.
+    let regex = regex::Regex::new(r#"^\s*\"(.*)\"\s*:\s*\"(.*)\"\s*$"#).unwrap();
+    let mut captures = regex.captures_iter(input);
+    let captured: (_, [&str; 2]) = captures
+        .next()
+        .expect("Parse the main menu item.")
+        .extract();
+    MainMenuItem {
+        title: captured
+            .1
+            .first()
+            .expect("Parse the main menu item title.")
+            .to_string(),
+        method_name: captured
+            .1
+            .get(1)
+            .expect("Parse the main menu item method name.")
+            .to_string(),
+        hot_key: None,
+    }
+}
+
 /// A button with title and the method name which should be called on
-/// [`self`] (for the [`ImguiPresentable``] object) once the button is
+/// [`self`] (for the [`ImguiPresentable`] object) once the button is
 /// pushed.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Button {
@@ -34,6 +57,19 @@ pub struct Button {
     pub title: String,
     /// The method name to call on `self` once the button is clicked.
     pub method_name: String,
+}
+
+/// A menu item with title and the method name which should be called on
+/// [`self`] (for the [`ImguiPresentable`] object) once the button is
+/// pushed.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct MainMenuItem {
+    /// The title of the button.
+    pub title: String,
+    /// The method name to call on `self` once the button is clicked.
+    pub method_name: String,
+    /// The hotkey combination which can also trigger the menu item.
+    pub hot_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -58,6 +94,8 @@ pub enum Attribute {
     Button(Button),
     /// Allows to select a backend.
     Backend(Backend),
+    /// A main menu item.
+    MainMenuItem(MainMenuItem),
 }
 
 impl FromStr for Attribute {
@@ -98,26 +136,12 @@ impl FromStr for Attribute {
             };
             Ok(match attribute.as_ref() {
                 "button" => {
-                    // let mut split = value.split(':');
-                    // let title = split
-                    //     .next()
-                    //     .unwrap_or_else(|| {
-                    //         panic!("A title must be provided for the button: {input}")
-                    //     })
-                    //     .trim()
-                    //     .replace('"', "")
-                    //     .to_owned();
-                    // let method_name = split
-                    //     .next()
-                    //     .unwrap_or_else(|| {
-                    //         panic!("A method name must be provided for the button: {input}")
-                    //     })
-                    //     .trim()
-                    //     .replace('"', "")
-                    //     .to_owned();
-                    // let button = Button { title, method_name };
                     let button = parse_button_declaration(&value);
                     Self::Button(button)
+                }
+                "main_menu_item" => {
+                    let main_menu_item = parse_main_menu_item_declaration(&value);
+                    Self::MainMenuItem(main_menu_item)
                 }
                 a => return Err(a.to_owned()),
             })
@@ -356,6 +380,19 @@ impl Attributes {
             .iter()
             .filter_map(|a| {
                 if let Attribute::Button(s) = a {
+                    Some(s)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn get_main_menu_items(&self) -> Vec<&MainMenuItem> {
+        self.attributes
+            .iter()
+            .filter_map(|a| {
+                if let Attribute::MainMenuItem(s) = a {
                     Some(s)
                 } else {
                     None

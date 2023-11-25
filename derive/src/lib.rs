@@ -86,6 +86,9 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// specified on a struct/enum.
 /// - `backend` allows a struct or enum to specify the backend it needs.
 /// only the chosen backend code will be derived.
+/// - `main_menu_item` allows to specify a main menu item. The main
+/// menu items are always visible and start at the top-left corner of
+/// a window.
 ///
 /// # Examples
 ///
@@ -207,6 +210,43 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 ///     fn bye(&mut self) {
 ///         println!("The \"Bye world\" button was pressed.");
 ///     }
+/// }
+/// ```
+/// ## Main menu bar items
+///
+/// Buttons are specified once per attribute string, in the format of:
+///
+/// ```ignore,no_run
+/// main_menu_item(<"title"> : <"method name to call">)
+/// ```
+///
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
+/// #[imgui_presentation(main_menu_item("File": "file_menu_clicked"))]
+/// #[imgui_presentation(main_menu_item("About": "about"))]
+/// pub struct A {
+/// }
+///
+/// impl A {
+///     fn file_menu_clicked(&mut self) {
+///         println!("The \"File\" main menu item was clicked.");
+///     }
+///
+///     fn about(&mut self) {
+///         println!("The \"About\" main menu item was clicked.");
+///     }
+/// }
+/// ```
+///
+/// ## Backends
+///
+/// To specify a backend for the code generation for a struct, use the
+/// `backend` attribute:
+///
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
+/// #[imgui_presentation(backend = "imgui")]
+/// pub struct A {
 /// }
 /// ```
 ///

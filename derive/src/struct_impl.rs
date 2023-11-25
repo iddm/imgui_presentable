@@ -318,8 +318,59 @@ fn generate_for_backend(
         quote! {}
     };
 
-    let has_buttons = !struct_attributes.get_buttons().is_empty();
-    let mut buttons = struct_attributes
+    let main_menu_items = struct_attributes.get_main_menu_items();
+    let has_menu = !main_menu_items.is_empty();
+
+    let mut main_menu_items = struct_attributes
+        .get_main_menu_items()
+        .into_iter()
+        .map(|b| {
+            let title = &b.title;
+            let method_name = syn::Ident::new(&b.method_name, Span::call_site());
+            // TODO figure hot to handle the shortcuts.
+            // let hot_key = b.hot_key;
+
+            match backend {
+                Backend::Imgui => {
+                    quote! {
+                        {
+                            if #ui_ident.menu_item_config(#title).build() {
+                                #[allow(clippy::ignored_unit_patterns)]
+                                let _ = self.#method_name();
+                            }
+                        }
+                    }
+                }
+                Backend::Egui => {
+                    quote! {
+                        {
+                            // TODO
+                            // if #ui_ident.button(#title).clicked() {
+                            //     #[allow(clippy::ignored_unit_patterns)]
+                            //     let _ = self.#method_name();
+                            // }
+                        }
+                    }
+                }
+            }
+        })
+        .fold(quote! {}, |mut code, button| {
+            code.extend(button);
+            code
+        });
+
+    if has_menu {
+        main_menu_items = match backend {
+            Backend::Imgui => quote! {
+                if let Some(_token) = #ui_ident.begin_menu_bar() {
+                    #main_menu_items
+                }
+            },
+            Backend::Egui => main_menu_items,
+        };
+    }
+
+    let buttons = struct_attributes
         .get_buttons()
         .into_iter()
         .map(|b| {
@@ -354,17 +405,6 @@ fn generate_for_backend(
             code
         });
 
-    if has_buttons {
-        buttons = match backend {
-            Backend::Imgui => quote! {
-                if let Some(_token) = #ui_ident.begin_menu_bar() {
-                    #buttons
-                }
-            },
-            Backend::Egui => buttons,
-        };
-    }
-
     let immutable_render = match backend {
         Backend::Imgui => {
             quote! {
@@ -390,6 +430,8 @@ fn generate_for_backend(
         Backend::Imgui => {
             quote! {
                 fn render_component_mut(&mut self, #ui_ident: &imgui::Ui, #extent_ident: imgui_presentable::Extent) {
+                    #main_menu_items
+
                     #tooltip
 
                     #(#ui_elements_mut;)*
