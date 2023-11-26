@@ -34,13 +34,19 @@ pub struct Extent {
 pub trait ImguiPresentable {
     /// Renders the implementor as a stand-alone window not allowing to
     /// change the values.
+    ///
+    /// # Note
+    ///
+    /// This is the default implementation. The code may be overriden
+    /// and changed to some other window creation code, depending on
+    /// the code generation options used.
     fn render_window(&self, ui: &imgui::Ui, extent: Extent) {
         ui.window(std::any::type_name::<Self>())
             .resizable(true)
             .collapsible(true)
             .bg_alpha(0.7f32)
             .position([0.0, 0.0], imgui::Condition::FirstUseEver)
-            .menu_bar(true)
+            .menu_bar(false)
             .build(|| self.render_component(ui, extent));
     }
 
@@ -50,13 +56,19 @@ pub trait ImguiPresentable {
 
     /// Renders the implementor as a stand-alone window allowing to
     /// change the values.
+    ///
+    /// # Note
+    ///
+    /// This is the default implementation. The code may be overriden
+    /// and changed to some other window creation code, depending on
+    /// the code generation options used.
     fn render_window_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
         ui.window(std::any::type_name::<Self>())
             .resizable(true)
             .collapsible(true)
             .bg_alpha(0.7f32)
             .position([0.0, 0.0], imgui::Condition::FirstUseEver)
-            .menu_bar(true)
+            .menu_bar(false)
             .build(|| self.render_component_mut(ui, extent));
     }
 

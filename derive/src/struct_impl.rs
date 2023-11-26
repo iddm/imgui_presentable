@@ -466,10 +466,45 @@ fn generate_for_backend(
         }
     };
 
+    let render_window_methods = match backend {
+        Backend::Imgui => {
+            quote! {
+                /// Renders the implementor as a stand-alone window not allowing to
+                /// change the values.
+                fn render_window(&self, ui: &imgui::Ui, extent: imgui_presentable::Extent) {
+                    ui.window(std::any::type_name::<Self>())
+                        .resizable(true)
+                        .collapsible(true)
+                        .bg_alpha(0.7f32)
+                        .position([0.0, 0.0], imgui::Condition::FirstUseEver)
+                        .menu_bar(#has_menu)
+                        .build(|| self.render_component(ui, extent));
+                }
+
+                /// Renders the implementor as a stand-alone window allowing to
+                /// change the values.
+                fn render_window_mut(&mut self, ui: &imgui::Ui, extent: imgui_presentable::Extent) {
+                    ui.window(std::any::type_name::<Self>())
+                        .resizable(true)
+                        .collapsible(true)
+                        .bg_alpha(0.7f32)
+                        .position([0.0, 0.0], imgui::Condition::FirstUseEver)
+                        .menu_bar(#has_menu)
+                        .build(|| self.render_component_mut(ui, extent));
+                }
+            }
+        }
+        Backend::Egui => {
+            quote! {}
+        }
+    };
+
     if struct_attributes.has_readonly() {
         quote! {
             #[doc = "Renders [`Self`] in the immediate gui. The code was automatically generated using the derive macro."]
             impl #impl_generics #trait_name for #struct_name #ty_generics #where_clause {
+                #render_window_methods
+
                 #immutable_render
             }
         }
@@ -477,6 +512,8 @@ fn generate_for_backend(
         quote! {
             #[doc = "Renders [`Self`] in the immediate gui. The code was automatically generated using the derive macro."]
             impl #impl_generics #trait_name for #struct_name #ty_generics #where_clause {
+                #render_window_methods
+
                 #immutable_render
 
                 #mutable_render
