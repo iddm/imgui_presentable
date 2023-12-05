@@ -15,7 +15,7 @@ fn generate_ui_field_for_struct(
     field_ident: &Option<Ident>,
     field_order: usize,
     total_field_count: usize,
-    _field_type: &TypePath,
+    field_type: &TypePath,
     attributes: &Attributes,
     mutable: bool,
     backend: Backend,
@@ -42,6 +42,97 @@ fn generate_ui_field_for_struct(
     let readonly_override = attributes.has_readonly();
     let mutable = mutable && !readonly_override;
 
+    let field_type_string = field_type
+        .path
+        .segments
+        .last()
+        .expect("Couldn't reach the type of the field.")
+        .ident
+        .to_string();
+    let field_type_str = field_type_string.as_ref();
+    let is_numeric_primitive = matches!(
+        field_type_str,
+        "usize"
+            | "isize"
+            | "u64"
+            | "i64"
+            | "f64"
+            | "f32"
+            | "u32"
+            | "i32"
+            | "u16"
+            | "i16"
+            | "u8"
+            | "i8"
+    );
+    let format_attribute = attributes.get_format();
+    let drag_range_attribute = attributes.get_range();
+    let drag_speed_attribute = attributes.get_speed();
+    let numeric_primitive_render = if is_numeric_primitive {
+        let mut code = quote! {};
+
+        let format_call = if let Some(format) = format_attribute {
+            quote! {
+                .display_format(#format)
+            }
+        } else {
+            quote! {}
+        };
+
+        let range_call = if let Some((min, max)) = drag_range_attribute {
+            let min = min
+                .map(|s| s.to_token_stream())
+                .unwrap_or_else(|| quote! { #field_type::MIN });
+            let max = max
+                .map(|s| s.to_token_stream())
+                .unwrap_or_else(|| quote! { #field_type::MAX });
+            quote! {
+                .range(#min, #max)
+            }
+        } else {
+            quote! {}
+        };
+
+        let speed_call = if let Some(speed) = drag_speed_attribute {
+            quote! {
+                .speed(#speed)
+            }
+        } else if matches!(field_type_str, "f32" | "f64") {
+            quote! {
+                .speed(0.001f32)
+            }
+        } else {
+            quote! {
+                .speed(0.2f32)
+            }
+        };
+
+        if mutable {
+            code.extend(quote! {
+                let _ = imgui::Drag::new(&format!("{}##{:p}", #field_type_str, std::ptr::addr_of!(self.#field_ident)))
+                    #format_call
+                    #range_call
+                    #speed_call
+                    .build(&ui, &mut self.#field_ident);
+            });
+        } else {
+            code.extend(quote! {
+                let mut data = self.#field_ident;
+                ui.disabled(true, || {
+                    let _ = imgui::Drag::new(&format!("{}##{:p}", #field_type_str, std::ptr::addr_of!(self.#field_ident)))
+                        #format_call
+                        #range_call
+                        #speed_call
+                        .build(&ui, &mut data);
+                });
+            });
+        }
+        code
+    } else {
+        quote! {}
+    };
+    // panic!("{numeric_primitive_render}");
+
     let element_subtree = match backend {
         Backend::Imgui => {
             let ui_element = {
@@ -50,13 +141,23 @@ fn generate_ui_field_for_struct(
                 };
 
                 if mutable {
-                    code.extend(quote! {
-                        (&mut self.#field_ident as &mut dyn imgui_presentable::ImguiPresentable).render_component_mut(#ui, #extent);
-                    });
+                    code.extend(
+                    if is_numeric_primitive {
+                            numeric_primitive_render
+                        } else {
+                            quote! {
+                                (&mut self.#field_ident as &mut dyn imgui_presentable::ImguiPresentable).render_component_mut(#ui, #extent);
+                            }
+                        });
                 } else {
-                    code.extend(quote! {
-                        (&self.#field_ident as &dyn imgui_presentable::ImguiPresentable).render_component(#ui, #extent);
-                    });
+                    code.extend(
+                        if is_numeric_primitive {
+                            numeric_primitive_render
+                        } else {
+                            quote! {
+                                (&self.#field_ident as &dyn imgui_presentable::ImguiPresentable).render_component(#ui, #extent);
+                            }
+                        });
                 };
 
                 if let Some(text) = attributes.get_tooltip_or_documentation() {
@@ -478,7 +579,7 @@ fn generate_for_backend(
                         .bg_alpha(0.7f32)
                         .position([0.0, 0.0], imgui::Condition::FirstUseEver)
                         .menu_bar(#has_menu)
-                        .build(|| self.render_component(ui, extent));
+                        .build(|| (self as &dyn imgui_presentable::ImguiPresentable).render_component(ui, extent));
                 }
 
                 /// Renders the implementor as a stand-alone window allowing to
@@ -490,7 +591,7 @@ fn generate_for_backend(
                         .bg_alpha(0.7f32)
                         .position([0.0, 0.0], imgui::Condition::FirstUseEver)
                         .menu_bar(#has_menu)
-                        .build(|| self.render_component_mut(ui, extent));
+                        .build(|| (self as &mut dyn imgui_presentable::ImguiPresentable).render_component_mut(ui, extent));
                 }
             }
         }
@@ -630,8 +731,10 @@ mod tests {
     }
 
     fn assert_uses_imgui_control(statement: &syn::Stmt, mutably: bool, _is_primitive: bool) {
-        let regex = regex::Regex::new(r"(.*)ui\s*\.\s*[checkbox|input_scalar|tree_node_config]\s*")
-            .unwrap();
+        let regex = regex::Regex::new(
+            r"(.*)ui\s*\.\s*[checkbox|disabled|input_scalar|tree_node_config]\s*",
+        )
+        .unwrap();
         let s = &statement.to_token_stream().to_string();
         assert!(regex.is_match(s), "Isn't an imgui control usage: {s}");
 
@@ -766,7 +869,7 @@ mod tests {
                 TokenStream::from_str(s).unwrap(),
                 &[Backend::Imgui],
             );
-            // println!("{generated}");
+            println!("{generated}");
             let item_impl: syn::ItemImpl = syn::parse2(generated.clone())
                 .map_err(|e| {
                     println!("{generated}");
@@ -791,8 +894,9 @@ mod tests {
             ));
             // The type the trait is implemented for is "A".
             assert_eq!(get_self_type_from_impl(&item_impl).unwrap(), "A");
-            // Has both, the immutable and mutable implementations.
-            assert_eq!(item_impl.items.len(), 2);
+            // Has both, the immutable and mutable implementations
+            // and windows.
+            assert_eq!(item_impl.items.len(), 4);
             assert_has_proper_immutable_implementation(&item_impl, 1);
             assert_has_proper_mutable_implementation(&item_impl, 1);
         }

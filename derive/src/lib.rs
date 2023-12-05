@@ -81,6 +81,10 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// - `rename` renames a struct or a field in the generated
 /// presentation code.
 /// - `format` (only for scalars) allows to set custom display format.
+/// - `speed` (only for scalars) allows to set custom speed of
+/// - `range` (only for scalars) allows to set a range of values the
+/// scalar object can have.
+/// the value change when dragging.
 /// - `tooltip` changes the hint text for a field or a struct.
 /// - `button` allows to generated custom buttons, can only be
 /// specified on a struct/enum.
@@ -154,6 +158,46 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// pub struct A {
 ///     #[imgui_presentation(rename = "A great field of a great struct")]
 ///     field: i32,
+/// }
+/// ```
+///
+/// ## Display format
+///
+/// For the primitive Rust types it is possible to override the default
+/// display formatter using a custom formatter in the "printf" format.
+///
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
+/// pub struct A {
+///     #[imgui_presentation(format = "%.2f")]
+///     value: f32,
+/// }
+/// ```
+///
+/// ## Speed
+///
+/// For the primitive Rust types it is possible to override the default
+/// change speed, by supplying an [`f32`] number:
+///
+/// ```rust,ignore
+/// #[derive(ImguiPresentation)]
+/// pub struct A {
+///     #[imgui_presentation(speed = 0.001f32)]
+///     value: f32,
+/// }
+/// ```
+///
+/// ## Range of values
+///
+/// For the primitive Rust types, it is possible to specify the range
+/// of values which is possible to set via GUI.
+///
+/// ```
+/// #[derive(ImguiPresentation)]
+/// pub struct A {
+///     // Just use the basic Rust range syntax here.
+///     #[imgui_presentation(range = 0.0f32..0.1f32)]
+///     value: f32,
 /// }
 /// ```
 ///

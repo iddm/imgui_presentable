@@ -83,6 +83,11 @@ pub enum Attribute {
     Rename(String),
     /// Set the display format for the field (printf syntax).
     Format(String),
+    /// Sets the drag speed (only for scalars). The range of values is
+    /// of type `f32`.
+    DragSpeed(String),
+    /// The range of the values the scalar can have.
+    DragRange(String),
     /// Allows to have a tooltip text that overrides the documentation.
     Tooltip(String),
     /// The documentation string.
@@ -118,6 +123,8 @@ impl FromStr for Attribute {
             Ok(match attribute.as_ref() {
                 "rename" => Self::Rename(value),
                 "format" => Self::Format(value),
+                "speed" => Self::DragSpeed(value),
+                "range" => Self::DragRange(value),
                 "tooltip" => Self::Tooltip(value),
                 "backend" => Self::Backend(Backend::from_str(&value)?),
                 a => return Err(a.to_owned()),
@@ -280,7 +287,9 @@ impl Attributes {
             return Ok(docs);
         }
 
-        let list = attribute.get_meta_list().unwrap();
+        let list = attribute
+            .get_meta_list()
+            .ok_or_else(|| quote! { compile_error!("Couldn't extract the meta list.") })?;
 
         let our_attribute = list.path.to_token_stream().to_string();
         if our_attribute != "imgui_presentation" {
@@ -332,12 +341,35 @@ impl Attributes {
         })
     }
 
-    // TODO Unused for now, will be used in the future.
-    #[allow(dead_code)]
     pub fn get_format(&self) -> Option<&str> {
         self.attributes.iter().find_map(|a| {
             if let Attribute::Format(s) = a {
                 Some(s.as_ref())
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn get_speed(&self) -> Option<f32> {
+        self.attributes.iter().find_map(|a| {
+            if let Attribute::DragSpeed(s) = a {
+                f32::from_str(s).ok()
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Returns two strings: the start and the end, the rest follows the
+    /// known Rust range syntax.
+    pub fn get_range(&self) -> Option<(Option<String>, Option<String>)> {
+        self.attributes.iter().find_map(|a| {
+            if let Attribute::DragRange(s) = a {
+                let range: syn::ExprRange = syn::parse2(s.to_token_stream()).ok()?;
+                let start = range.start.map(|s| s.to_token_stream().to_string());
+                let end = range.end.map(|s| s.to_token_stream().to_string());
+                Some((start, end))
             } else {
                 None
             }

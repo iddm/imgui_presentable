@@ -1,12 +1,12 @@
 [package]
 name = "imgui_presentable_derive"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "Derive macro for ImguiPresentable."
 license = "MIT"
 keywords = ["imgui"]
-repository = "https://github.com/vityafx/imgui_presentable"
+repository = "https://github.com/iddm/imgui_presentable"
 documentation = "https://docs.rs/imgui_presentable_derive"
 
 [lib]

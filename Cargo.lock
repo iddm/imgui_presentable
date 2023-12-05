@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "imgui_presentable_derive"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "lazy_static",
  "proc-macro2",

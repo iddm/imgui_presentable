@@ -6,7 +6,7 @@ authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "A simple way to represent Rust types in ImGui."
 license = "MIT"
 keywords = ["imgui"]
-repository = "https://github.com/vityafx/imgui_presentable"
+repository = "https://github.com/iddm/imgui_presentable"
 documentation = "https://docs.rs/imgui_presentable"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
