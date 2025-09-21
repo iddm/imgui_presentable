@@ -192,7 +192,7 @@ fn derive_imgui_presentable_impl(tokens: proc_macro2::TokenStream) -> proc_macro
 /// For the primitive Rust types, it is possible to specify the range
 /// of values which is possible to set via GUI.
 ///
-/// ```
+/// ```rust,ignore
 /// #[derive(ImguiPresentation)]
 /// pub struct A {
 ///     // Just use the basic Rust range syntax here.

@@ -1,6 +1,6 @@
 [package]
 name = "imgui_presentable"
-version = "0.4.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["Viktor Polevoi <maintainer@vpolevoy.com>"]
 description = "A simple way to represent Rust types in ImGui."
@@ -14,11 +14,14 @@ documentation = "https://docs.rs/imgui_presentable"
 [dependencies]
 imgui_presentable_derive = { path = "../derive" }
 # imgui_presentable_derive = { version = "0.5" }
-imgui = { version = "0.11", features = ["tables-api"], optional = true }
-egui = { version = "0.24", optional = true }
+imgui = { version = "0.12", features = ["tables-api"], optional = true }
+egui = { version = "0.32", optional = true }
 # Just for the tables.
-egui_extras = { version = "0.24", optional = true }
-glam = { version = "0.24", optional = true }
+egui_extras = { version = "0.32", optional = true }
+# Note that the crate depending on imgui_presentable must have the same
+# version of the dependency here, otherwise, the compiler will treat
+# the implementations as different (due to those being incompatible).
+glam = { version = "0.30", optional = true }
 
 [features]
 default = ["glam", "imgui_backend", "egui_backend"]

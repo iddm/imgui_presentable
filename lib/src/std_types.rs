@@ -12,7 +12,7 @@ mod imgui_backend {
     impl<T: ImguiPresentable> ImguiPresentable for Vec<T> {
         fn render_component(&self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
             if let Some(table) = ui.begin_table_header(
                 "objects",
                 [imgui::TableColumnSetup::new(&format!(
@@ -38,7 +38,7 @@ mod imgui_backend {
 
         fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
             // let filter = ui.input_scalar("Filter index", )
 
             if let Some(table) = ui.begin_table_header_with_flags(
@@ -99,7 +99,7 @@ mod imgui_backend {
     impl<T: ImguiPresentable + Ord> ImguiPresentable for BTreeSet<T> {
         fn render_component(&self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             if let Some(table) = ui.begin_table_header(
                 "objects",
@@ -120,7 +120,7 @@ mod imgui_backend {
 
         fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             if let Some(table) = ui.begin_table_header(
                 "objects",
@@ -184,7 +184,7 @@ mod imgui_backend {
     impl<T: ImguiPresentable> ImguiPresentable for HashSet<T> {
         fn render_component(&self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             if let Some(table) = ui.begin_table_header(
                 "objects",
@@ -205,7 +205,7 @@ mod imgui_backend {
 
         fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             if let Some(table) = ui.begin_table_header(
                 "objects",
@@ -249,7 +249,7 @@ mod imgui_backend {
 
     impl<K: ImguiPresentable, V: ImguiPresentable> ImguiPresentable for BTreeMap<K, V> {
         fn render_component(&self, ui: &imgui::Ui, extent: Extent) {
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
             if let Some(table) = ui.begin_table_header(
                 "objects",
                 [
@@ -274,7 +274,7 @@ mod imgui_backend {
         }
 
         fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             if let Some(table) = ui.begin_table_header(
                 "objects",
@@ -310,7 +310,7 @@ mod imgui_backend {
 
     impl<K: ImguiPresentable, V: ImguiPresentable> ImguiPresentable for HashMap<K, V> {
         fn render_component(&self, ui: &imgui::Ui, extent: Extent) {
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
             if let Some(table) = ui.begin_table_header(
                 "objects",
                 [
@@ -335,7 +335,7 @@ mod imgui_backend {
         }
 
         fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             if let Some(table) = ui.begin_table_header(
                 "objects",
@@ -372,7 +372,7 @@ mod imgui_backend {
     impl<T: ImguiPresentable + Default> ImguiPresentable for Option<T> {
         fn render_component(&self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
 
             let mut has_value = self.is_some();
 
@@ -395,13 +395,10 @@ mod imgui_backend {
 
         fn render_component_mut(&mut self, ui: &imgui::Ui, extent: Extent) {
             let type_name = std::any::type_name::<T>();
-            let _id = ui.push_id(&format!("##{self:p}"));
+            let _id = ui.push_id(format!("##{self:p}"));
             let had_value = self.is_some();
             let mut has_value = had_value;
-            let checked = ui.checkbox(
-                &format!("Has value ({type_name})##{self:p}"),
-                &mut has_value,
-            );
+            let checked = ui.checkbox(format!("Has value ({type_name})##{self:p}"), &mut has_value);
             if checked || has_value {
                 if !had_value {
                     let _ = self.insert(T::default());
@@ -416,6 +413,8 @@ mod imgui_backend {
         }
     }
 }
+
+#[allow(unused)]
 #[cfg(feature = "imgui_backend")]
 pub use imgui_backend::*;
 
@@ -439,7 +438,8 @@ mod egui_backend {
                     });
                 })
                 .body(|body| {
-                    body.rows(20.0f32, self.len(), |row_index, mut row| {
+                    body.rows(20.0f32, self.len(), |mut row| {
+                        let row_index = row.index();
                         // ui.separator();
                         row.col(|ui| {
                             ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
@@ -503,7 +503,8 @@ mod egui_backend {
                     });
                 })
                 .body(|body| {
-                    body.rows(20.0f32, self.len(), |row_index, mut row| {
+                    body.rows(20.0f32, self.len(), |mut row| {
+                        let row_index = row.index();
                         // ui.separator();
                         row.col(|ui| {
                             ui.horizontal(|ui| {
@@ -547,7 +548,8 @@ mod egui_backend {
                 .body(|body| {
                     let len = self.len();
                     let mut iter = self.iter();
-                    body.rows(20.0f32, len, |row_index, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
+                        let row_index = row.index();
                         // ui.separator();
                         row.col(|ui| {
                             ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
@@ -578,7 +580,8 @@ mod egui_backend {
                     });
                 })
                 .body(move |body| {
-                    body.rows(20.0f32, len, |row_index, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
+                        let row_index = row.index();
                         row.col(|ui| {
                             ui.horizontal(|ui| {
                                 ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
@@ -640,7 +643,8 @@ mod egui_backend {
                 .body(|body| {
                     let len = self.len();
                     let mut iter = self.iter();
-                    body.rows(20.0f32, len, |row_index, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
+                        let row_index = row.index();
                         // ui.separator();
                         row.col(|ui| {
                             ui.collapsing(format!("{row_index}: {type_name}"), |ui| {
@@ -775,7 +779,7 @@ mod egui_backend {
                 .body(|body| {
                     let len = self.len();
                     let mut iter = self.iter().enumerate();
-                    body.rows(20.0f32, len, |_, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
                             row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
@@ -829,7 +833,7 @@ mod egui_backend {
                 .body(|body| {
                     let len = self.len();
                     let mut iter = self.iter_mut().enumerate();
-                    body.rows(20.0f32, len, |_, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
                             row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
@@ -889,7 +893,7 @@ mod egui_backend {
                 .body(|body| {
                     let len = self.len();
                     let mut iter = self.iter().enumerate();
-                    body.rows(20.0f32, len, |_, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
                             row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
@@ -951,7 +955,7 @@ mod egui_backend {
                 .body(|body| {
                     let len = self.len();
                     let mut iter = self.iter_mut().enumerate();
-                    body.rows(20.0f32, len, |_, mut row| {
+                    body.rows(20.0f32, len, |mut row| {
                         // ui.separator();
                         if let Some((i, (k, v))) = iter.next() {
                             row.col(|ui| (&i as &dyn EguiPresentable).render_component(ui));
@@ -995,7 +999,7 @@ mod egui_backend {
             let had_value = self.is_some();
             let mut has_value = had_value;
             let checked = ui
-                .checkbox(&mut has_value, &format!("Has value ({type_name})"))
+                .checkbox(&mut has_value, format!("Has value ({type_name})"))
                 .changed();
             if checked || has_value {
                 if !had_value {
@@ -1011,5 +1015,7 @@ mod egui_backend {
         }
     }
 }
+
+#[allow(unused)]
 #[cfg(feature = "egui_backend")]
 pub use egui_backend::*;

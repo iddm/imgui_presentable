@@ -156,72 +156,46 @@ mod imgui_backend {
     }
 
     fn create_vec4_for_mat4(ui: &imgui::Ui, vec: &glam::Vec4, prefix: &str) {
-        let _ = {
-            let mut value = vec.x;
-            ui.input_float(
-                &format!("{prefix}_0##{:p}", std::ptr::addr_of!(vec.x)),
-                &mut value,
-            )
-            .read_only(true)
-            .build()
-        };
-        let _ = {
-            let mut value = vec.y;
-            ui.input_float(
-                &format!("{prefix}_1##{:p}", std::ptr::addr_of!(vec.y)),
-                &mut value,
-            )
-            .read_only(true)
-            .build()
-        };
-        let _ = {
-            let mut value = vec.z;
-            ui.input_float(
-                &format!("{prefix}_2##{:p}", std::ptr::addr_of!(vec.z)),
-                &mut value,
-            )
-            .read_only(true)
-            .build()
-        };
-        let _ = {
-            let mut value = vec.w;
-            ui.input_float(
-                &format!("{prefix}_3##{:p}", std::ptr::addr_of!(vec.w)),
-                &mut value,
-            )
-            .read_only(true)
-            .build()
-        };
+        ui.disabled(true, || {
+            let _ = {
+                let mut value = vec.x;
+                imgui::Drag::new(&format!("{prefix}_0##{:p}", std::ptr::addr_of!(vec.x)))
+                    .build(ui, &mut value)
+            };
+            let _ = {
+                let mut value = vec.y;
+                imgui::Drag::new(&format!("{prefix}_1##{:p}", std::ptr::addr_of!(vec.y)))
+                    .build(ui, &mut value)
+            };
+            let _ = {
+                let mut value = vec.z;
+                imgui::Drag::new(&format!("{prefix}_2##{:p}", std::ptr::addr_of!(vec.z)))
+                    .build(ui, &mut value)
+            };
+            let _ = {
+                let mut value = vec.w;
+                imgui::Drag::new(&format!("{prefix}_3##{:p}", std::ptr::addr_of!(vec.w)))
+                    .build(ui, &mut value)
+            };
+        });
     }
 
     fn create_vec4_for_mat4_mut(ui: &imgui::Ui, vec: &mut glam::Vec4, prefix: &str) {
         let _ = {
-            ui.input_float(
-                &format!("{prefix}_0##{:p}", std::ptr::addr_of!(vec.x)),
-                &mut vec.x,
-            )
-            .build()
+            imgui::Drag::new(&format!("{prefix}_0##{:p}", std::ptr::addr_of!(vec.x)))
+                .build(ui, &mut vec.x)
         };
         let _ = {
-            ui.input_float(
-                &format!("{prefix}_1##{:p}", std::ptr::addr_of!(vec.y)),
-                &mut vec.y,
-            )
-            .build()
+            imgui::Drag::new(&format!("{prefix}_1##{:p}", std::ptr::addr_of!(vec.y)))
+                .build(ui, &mut vec.y)
         };
         let _ = {
-            ui.input_float(
-                &format!("{prefix}_2##{:p}", std::ptr::addr_of!(vec.z)),
-                &mut vec.z,
-            )
-            .build()
+            imgui::Drag::new(&format!("{prefix}_2##{:p}", std::ptr::addr_of!(vec.z)))
+                .build(ui, &mut vec.z)
         };
         let _ = {
-            ui.input_float(
-                &format!("{prefix}_3##{:p}", std::ptr::addr_of!(vec.w)),
-                &mut vec.w,
-            )
-            .build()
+            imgui::Drag::new(&format!("{prefix}_3##{:p}", std::ptr::addr_of!(vec.w)))
+                .build(ui, &mut vec.w)
         };
     }
 
@@ -1171,3 +1145,20 @@ mod egui_backend {
 
 #[cfg(feature = "egui_backend")]
 pub use egui_backend::*;
+
+#[cfg(test)]
+mod tests {
+    use crate::ImguiPresentable;
+
+    fn implements_imgui<T: ImguiPresentable>(_val: &T) {}
+
+    #[test]
+    fn the_types_implement_imgui() {
+        implements_imgui(&glam::Mat4::IDENTITY);
+        implements_imgui(&glam::Mat3::IDENTITY);
+        implements_imgui(&glam::Mat2::IDENTITY);
+        implements_imgui(&glam::Vec4::default());
+        implements_imgui(&glam::Vec3::default());
+        implements_imgui(&glam::Vec2::default());
+    }
+}
